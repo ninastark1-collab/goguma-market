@@ -21,7 +21,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Supabase 프로젝트 `gfcylhusujdvzsoinwoj`(서울, ap-northeast-2)는 **가계부 앱(money-ledger)과 함께 쓰는 DB**예요.
 - **가계부 테이블 `transactions`, `budgets`는 절대 건드리지 마세요.** (읽기·수정·삭제·스키마 변경 모두 금지)
   - 가계부는 로그인 없이 공개 키로 쓰는 앱이라, 이 테이블들의 RLS·정책을 바꾸면 가계부가 망가질 수 있어요.
-- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글)
+- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글). Storage 버킷: `goguma-item-photos`(판매글 사진)
 - 인증(`auth.users`)도 두 앱이 같은 공간을 써요. 가계부는 로그인을 안 쓰지만, 사용자를 일괄 삭제하는 등 auth 전체에 영향을 주는 작업은 하지 마세요.
 - DB를 바꿀 때는 **반드시 SQL 파일을 `supabase/migrations/`에 번호 순서대로 남기고**(예: `002_goguma_items.sql`), 모든 새 테이블에 **RLS를 켜고 정책을 함께** 만들어요. 바꾼 뒤에는 Supabase 보안 점검(advisors)을 돌려 확인해요.
 - 데이터를 지우거나 테이블을 없애는 작업은 먼저 주인에게 물어보세요.
@@ -44,7 +44,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 아직 예시(가짜) 데이터인 것
 - 홈·카테고리·검색의 매물은 이제 DB `items` 테이블에서 불러와요. (`src/lib/items.ts`)
-- 판매글에 **사진은 아직 없어요.** 썸네일 자리는 카테고리 그림(`CATEGORIES`의 `emoji`, `tint`)으로 대신해요.
+- 판매글 사진은 최대 10장이에요. 사진이 없는 글(샘플 글 등)은 썸네일 자리에 카테고리 그림(`CATEGORIES`의 `emoji`, `tint`)을 보여 줘요.
+- 사진은 브라우저가 Storage에 직접 올려요(Server Action 용량 한도 1MB 때문). 사진 경로는 `{사용자id}/{uuid}.jpg` 모양만 허용해요.
 - 동네생활 / 채팅 / 나의 고구마의 메뉴들(판매내역 등)은 "준비 중" 화면이에요.
 
 ## 디자인 규칙

@@ -1,10 +1,12 @@
 "use client";
 // 판매글 쓰기 / 고치기에 같이 쓰는 입력 폼
-// (사진 올리기는 아직 없어요. 다음 단계에서 추가할 예정)
+// 저장 버튼을 누르면: ① 새 사진을 Storage에 올리고 → ② 사진 경로와 글 내용을 Server Action으로 보내요.
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import FormMessage from "@/components/FormMessage";
-import { CATEGORIES, STATUSES, type Item } from "@/lib/market";
+import PhotoPicker, { type PickedPhoto } from "@/components/PhotoPicker";
+import { uploadPhoto } from "@/lib/photos";
+import { CATEGORIES, photoUrl, STATUSES, type Item } from "@/lib/market";
 import type { ItemFormState } from "@/app/items/actions";
 
 type Props = {
@@ -23,9 +25,41 @@ export default function ItemForm({ action, item }: Props) {
     status: item?.status ?? "판매중",
   };
 
+  // 사진 목록: 고치기 화면이면 이미 올라간 사진부터 채워 둬요.
+  const [photos, setPhotos] = useState<PickedPhoto[]>(
+    () => item?.photos.map((path) => ({ key: path, path, preview: photoUrl(path) })) ?? [],
+  );
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>();
+  const busy = uploading || pending;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); // 바로 보내지 않고, 사진부터 올려요.
+    const formData = new FormData(e.currentTarget);
+    setUploadError(undefined);
+    setUploading(true);
+    try {
+      // 아직 안 올린 사진만 한꺼번에 올려요. 이미 올린 사진은 경로를 그대로 써요.
+      const uploaded = await Promise.all(
+        photos.map(async (p) => (p.path ? p : { ...p, path: await uploadPhoto(p.blob!) })),
+      );
+      // 저장에 실패해서 다시 누르더라도 같은 사진을 또 올리지 않게 기억해 둬요.
+      setPhotos(uploaded);
+      uploaded.forEach((p) => formData.append("photos", p.path!));
+      // startTransition: useActionState의 액션을 직접 부를 때 꼭 감싸야 해요. (pending 표시도 이걸로 동작)
+      startTransition(() => formAction(formData));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "사진을 올리지 못했어요.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     // key: 되돌아온 값이 바뀌면 입력칸을 새 값으로 다시 채우게 해요.
-    <form key={JSON.stringify(v)} action={formAction} className="flex flex-col gap-5">
+    <form key={JSON.stringify(v)} onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <PhotoPicker photos={photos} onChange={setPhotos} disabled={busy} />
+
       <label className="flex flex-col gap-1.5">
         <span className="font-display">제목</span>
         <input className="field" name="title" placeholder="예) 호박고구마 10kg 한 박스" minLength={2} maxLength={40} defaultValue={v.title} required />
@@ -80,10 +114,10 @@ export default function ItemForm({ action, item }: Props) {
         />
       </label>
 
-      <FormMessage error={state?.error} />
+      <FormMessage error={uploadError ?? state?.error} />
 
-      <button type="submit" className="btn-goguma w-full" disabled={pending}>
-        {pending ? "밭에 심는 중…" : item ? "고친 내용 저장하기" : "동네에 올리기"}
+      <button type="submit" className="btn-goguma w-full" disabled={busy}>
+        {uploading ? "사진 올리는 중…" : pending ? "밭에 심는 중…" : item ? "고친 내용 저장하기" : "동네에 올리기"}
       </button>
     </form>
   );

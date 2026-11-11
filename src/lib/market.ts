@@ -43,8 +43,18 @@ export type Item = {
   status: ItemStatus;
   created_at: string;
   updated_at: string;
+  photos: string[]; // Storage 안의 사진 경로 목록 (첫 번째가 대표 사진)
   seller: { nickname: string } | null;
 };
+
+// 사진 설정: 저장 공간(버킷) 이름과 한 글에 올릴 수 있는 최대 장수
+export const PHOTO_BUCKET = "goguma-item-photos";
+export const MAX_PHOTOS = 10;
+
+// 사진 경로("사용자id/파일.jpg") → 누구나 볼 수 있는 사진 주소
+export function photoUrl(path: string) {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
+}
 
 export function formatPrice(price: number) {
   return price === 0 ? "나눔 🧡" : `${price.toLocaleString("ko-KR")}원`;

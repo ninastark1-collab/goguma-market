@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { formatPrice, getCategory, timeAgo, type Item } from "@/lib/market";
+import { formatPrice, getCategory, photoUrl, timeAgo, type Item } from "@/lib/market";
 
 // 매물 한 개 (목록에서 쓰는 카드). 누르면 상세 화면으로 가요.
 // now: 몇 분 전인지 계산할 기준 시각 (목록 전체가 같은 기준을 쓰도록 밖에서 받아요)
@@ -10,14 +11,32 @@ export default function ItemCard({ item, now }: { item: Item; now: number }) {
   return (
     <li className="border-b-2 border-dashed border-straw last:border-b-0 sm:border-b-0">
       <Link href={`/items/${item.id}`} className="group flex gap-4 py-4 sm:flex-col sm:gap-0 sm:py-0">
-        {/* 사진 자리: 사진 기능 전까지 카테고리 그림을 보여 줘요 */}
+        {/* 대표 사진. 사진이 없는 글은 카테고리 그림을 보여 줘요 */}
         <div
           className="relative grid aspect-square w-28 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-soil sm:w-full"
           style={{ background: category?.tint }}
         >
-          <span className={`text-5xl transition-transform group-hover:scale-110 sm:text-6xl ${done ? "opacity-40" : ""}`}>
-            {category?.emoji ?? "📦"}
-          </span>
+          {item.photos.length > 0 ? (
+            <>
+              {/* next/image: 화면 크기에 맞게 사진을 줄여서 빨리 보여 줘요 */}
+              <Image
+                src={photoUrl(item.photos[0])}
+                alt={item.title}
+                fill
+                sizes="(min-width: 1024px) 240px, (min-width: 640px) 30vw, 112px"
+                className={`object-cover transition-transform group-hover:scale-105 ${done ? "opacity-50" : ""}`}
+              />
+              {item.photos.length > 1 && (
+                <span className="absolute bottom-1.5 right-1.5 rounded-full bg-soil/75 px-1.5 py-0.5 text-[10px] text-white">
+                  📷 {item.photos.length}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className={`text-5xl transition-transform group-hover:scale-110 sm:text-6xl ${done ? "opacity-40" : ""}`}>
+              {category?.emoji ?? "📦"}
+            </span>
+          )}
         </div>
 
         <div className="min-w-0 flex-1 sm:mt-3">

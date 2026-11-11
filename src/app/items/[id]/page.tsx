@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DeleteItemButton from "@/components/DeleteItemButton";
+import PhotoGallery from "@/components/PhotoGallery";
 import { getCurrentUser } from "@/lib/auth";
 import { getItem, getRequestTime } from "@/lib/items";
-import { formatPrice, getCategory, timeAgo } from "@/lib/market";
+import { formatPrice, getCategory, photoUrl, timeAgo } from "@/lib/market";
 
 export const metadata: Metadata = { title: "판매글 · 고구마마켓" };
 
@@ -33,10 +34,14 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
 
   return (
     <article className="card-sack mt-3 overflow-hidden">
-      {/* 사진 자리: 아직 사진 기능이 없어서 카테고리 그림을 보여 줘요 */}
-      <div className="grid aspect-[16/9] place-items-center border-b-2 border-soil" style={{ background: category?.tint }}>
-        <span className={`text-8xl ${done ? "opacity-40" : ""}`}>{category?.emoji ?? "📦"}</span>
-      </div>
+      {/* 사진 (여러 장이면 옆으로 넘겨 봐요). 사진이 없으면 카테고리 그림 */}
+      {item.photos.length > 0 ? (
+        <PhotoGallery urls={item.photos.map(photoUrl)} alt={item.title} dim={done} />
+      ) : (
+        <div className="grid aspect-[16/9] place-items-center border-b-2 border-soil" style={{ background: category?.tint }}>
+          <span className={`text-8xl ${done ? "opacity-40" : ""}`}>{category?.emoji ?? "📦"}</span>
+        </div>
+      )}
 
       {/* 판매자 */}
       <div className="flex items-center gap-3 border-b-2 border-dashed border-straw px-5 py-4 sm:px-8">

@@ -57,12 +57,29 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 - 사진이 없는 동안 썸네일 자리에는 카테고리 그림과 배경색을 보여 줘요.
 - 판매 상태(판매중/예약중/거래완료)는 '고치기'에서 바꿀 수 있어요.
 
+## 3단계: 판매글 사진 (최대 10장) ✅
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `supabase/migrations/003_goguma_item_photos.sql` | `items.photos`(사진 경로 목록, 최대 10개) + Storage 버킷 `goguma-item-photos` + 내 폴더에만 올리기/지우기 정책 |
+| `src/lib/photos.ts` | 브라우저에서 사진 줄이기(긴 쪽 1600px, JPG) + Storage에 올리기 |
+| `src/components/PhotoPicker.tsx` | 사진 고르기, 미리보기, 빼기, 대표 사진 바꾸기 |
+| `src/components/ItemForm.tsx` | 저장 시 새 사진부터 올리고 → 사진 경로와 글 내용을 Server Action으로 |
+| `src/app/items/actions.ts` | 사진 경로 검사, 수정 때 뺀 사진·삭제한 글의 사진을 Storage에서도 지우기 |
+| `src/components/PhotoGallery.tsx` | 상세 화면에서 사진 옆으로 넘겨 보기 |
+
+### 흐름
+1. 사진을 고르면 브라우저가 바로 크기를 줄여 미리보기를 보여 줘요.
+2. 저장을 누르면 새 사진을 Storage의 `{내 사용자 id}/{무작위 이름}.jpg` 에 올려요. (서버를 거치지 않아 용량 한도 걱정 없음)
+3. 글에는 사진 경로만 순서대로 저장돼요. 첫 번째 사진이 대표 사진이에요.
+4. 화면에서는 `next/image`가 사진을 화면 크기에 맞게 줄여서 보여 줘요. (`next.config.ts`의 `images.remotePatterns`)
+
 ## 디자인 테마 — 구황작물 / 향토
 한지 배경, 흙색 글자, 고구마 껍질 자주색 버튼, 군고구마 속살 노란색 강조.
 색상과 버튼 스타일은 `src/app/globals.css` 의 `@theme` 과 `@utility` 에 모여 있습니다.
 
 ## 다음 단계 (예정)
 - [x] 판매글 올리기 / 목록 / 상세 / 수정 / 삭제 (사진 제외)
-- [ ] 판매글 사진 업로드 (Supabase Storage)
+- [x] 판매글 사진 업로드 (Supabase Storage, 최대 10장)
 - [ ] 찜하기, 채팅
 - [ ] 배포 (가계부와 다른 주소로)

@@ -12,7 +12,7 @@ export default function WritePage() {
       <Link href="/" className="text-sm text-soil-soft hover:text-skin">← 홈으로</Link>
       <div className="card-sack mt-3 px-5 py-6 sm:px-8">
         <h1 className="font-display text-3xl">내 물건 팔기 🧺</h1>
-        <p className="mt-1 text-sm text-soil-soft">사진 올리기는 곧 추가될 예정이에요. 지금은 글로만 올려요.</p>
+        <p className="mt-1 text-sm text-soil-soft">사진은 최대 10장까지 올릴 수 있어요.</p>
         <div className="mt-6">
           <ItemForm action={createItem} />
         </div>
