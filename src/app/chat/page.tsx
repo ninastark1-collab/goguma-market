@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import ItemThumb from "@/components/ItemThumb";
+import { Avatar } from "@/components/Avatar";
+import { RowListSkeleton } from "@/components/Skeletons";
 import { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
 import { getRequestTime } from "@/lib/items";
@@ -16,7 +18,7 @@ export default function ChatPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-display text-3xl">채팅 💬</h1>
-      <Suspense fallback={<p className="py-20 text-center text-soil-soft">고구마 캐는 중…</p>}>
+      <Suspense fallback={<RowListSkeleton />}>
         <RoomList />
       </Suspense>
     </div>
@@ -45,7 +47,7 @@ async function RoomList() {
         return (
           <li key={room.id}>
             <Link href={`/chat/${room.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-flesh-soft/40">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-soil bg-flesh-soft text-xl">🍠</span>
+              <Avatar emoji={(iAmSeller ? room.buyer : room.seller)?.avatar} size={44} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-1.5">
                   <span className="truncate font-display">{other}</span>
@@ -53,7 +55,7 @@ async function RoomList() {
                     {iAmSeller ? "구매 문의" : "판매자"} · {timeAgo(room.last_message_at ?? room.created_at, now)}
                   </span>
                 </span>
-                <span className="block truncate text-sm text-soil-soft">{room.last_message ?? "아직 메시지가 없어요"}</span>
+                <span className="block truncate text-sm text-soil-soft">{room.last_message === "" ? "📷 사진" : (room.last_message ?? "아직 메시지가 없어요")}</span>
               </span>
               {room.unread > 0 && (
                 <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-ember px-1.5 text-xs text-white">

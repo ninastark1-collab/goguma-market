@@ -36,6 +36,7 @@ export type ChatMessage = {
   room_id: number;
   sender_id: string;
   body: string;
+  image_path: string | null; // 채팅 사진 (비공개 버킷 안의 경로)
   read_at: string | null;
   created_at: string;
 };
@@ -47,22 +48,24 @@ export type ChatRoom = {
   buyer_id: string;
   last_message: string | null;
   last_message_at: string | null;
+  seller_left_at: string | null;
+  buyer_left_at: string | null;
   created_at: string;
-  item: Pick<Item, "id" | "title" | "price" | "status" | "category" | "photos"> | null;
-  seller: { nickname: string } | null;
-  buyer: { nickname: string } | null;
+  item: Pick<Item, "id" | "title" | "price" | "status" | "category" | "photos" | "accept_offers" | "buyer_id"> | null;
+  seller: { nickname: string; avatar: string; manner_temp: number } | null;
+  buyer: { nickname: string; avatar: string; manner_temp: number } | null;
 };
 
 // 채팅방 + 판매글 요약 + 두 사람 닉네임
 // (profiles를 두 번 가리켜서, 어느 연결인지 이름(…_fkey)으로 짚어 줘요)
 const ROOM_COLUMNS =
-  "*, item:items(id, title, price, status, category, photos), seller:profiles!chat_rooms_seller_id_fkey(nickname), buyer:profiles!chat_rooms_buyer_id_fkey(nickname)";
+  "*, item:items(id, title, price, status, category, photos, accept_offers, buyer_id), seller:profiles!chat_rooms_seller_id_fkey(nickname, avatar, manner_temp), buyer:profiles!chat_rooms_buyer_id_fkey(nickname, avatar, manner_temp)";
 
 // 내 채팅 목록 (최근 대화 순) + 방마다 안 읽은 메시지 수
 export async function getMyChatRooms(userId: string) {
   await connection();
   const supabase = await createClient();
-  const [rooms, unread] = await Promise.all([
+  const [rooms, unread, blocks] = await Promise.all([
     supabase
       .from("chat_rooms")
       .select(ROOM_COLUMNS)
@@ -71,13 +74,25 @@ export async function getMyChatRooms(userId: string) {
       .order("created_at", { ascending: false }),
     // RLS 덕분에 내가 들어 있는 방의 메시지만 보여요.
     supabase.from("chat_messages").select("room_id").is("read_at", null).neq("sender_id", userId),
+    supabase.from("user_blocks").select("blocked_id").eq("blocker_id", userId),
   ]);
   if (rooms.error) throw new Error("채팅 목록을 불러오지 못했어요: " + rooms.error.message);
 
   const unreadByRoom = new Map<number, number>();
   for (const m of unread.data ?? []) unreadByRoom.set(m.room_id, (unreadByRoom.get(m.room_id) ?? 0) + 1);
 
-  return ((rooms.data ?? []) as ChatRoom[]).map((room) => ({ ...room, unread: unreadByRoom.get(room.id) ?? 0 }));
+  const blocked = new Set((blocks.data ?? []).map((b) => b.blocked_id as string));
+
+  return ((rooms.data ?? []) as ChatRoom[])
+    .filter((room) => {
+      const iAmSeller = room.seller_id === userId;
+      // 내가 차단한 사람과의 방은 목록에서 숨겨요.
+      if (blocked.has(iAmSeller ? room.buyer_id : room.seller_id)) return false;
+      // 내가 나간 방은 숨기되, 나간 뒤에 새 메시지가 오면 다시 보여요.
+      const leftAt = iAmSeller ? room.seller_left_at : room.buyer_left_at;
+      return !leftAt || (!!room.last_message_at && room.last_message_at > leftAt);
+    })
+    .map((room) => ({ ...room, unread: unreadByRoom.get(room.id) ?? 0 }));
 }
 
 // 채팅방 하나 + 최근 메시지 (방의 두 사람이 아니면 null)

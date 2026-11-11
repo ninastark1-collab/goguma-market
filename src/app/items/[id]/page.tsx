@@ -109,8 +109,10 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               <span className="block font-display">{item.seller?.nickname ?? "알 수 없음"}</span>
               <span className="block text-xs text-soil-soft">📍 {item.region ?? "동네 미설정"}</span>
             </span>
-            <span className="w-28 shrink-0">
-              <TempBadge temp={Number(item.seller?.manner_temp ?? 36.5)} />
+            {/* 좁은 칸이라 숫자형(compact)으로: 36.5℃ 🌱 */}
+            <span className="flex shrink-0 flex-col items-end">
+              <TempBadge temp={Number(item.seller?.manner_temp ?? 36.5)} compact />
+              <span className="text-[10px] text-soil-soft">고구마 온도</span>
             </span>
           </Link>
 

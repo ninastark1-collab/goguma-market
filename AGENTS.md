@@ -21,10 +21,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Supabase 프로젝트 `gfcylhusujdvzsoinwoj`(서울, ap-northeast-2)는 **가계부 앱(money-ledger)과 함께 쓰는 DB**예요.
 - **가계부 테이블 `transactions`, `budgets`는 절대 건드리지 마세요.** (읽기·수정·삭제·스키마 변경 모두 금지)
   - 가계부는 로그인 없이 공개 키로 쓰는 앱이라, 이 테이블들의 RLS·정책을 바꾸면 가계부가 망가질 수 있어요.
-- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글), `item_likes`(좋아요), `chat_rooms`·`chat_messages`(채팅), `item_comments`(댓글). Storage 버킷: `goguma-item-photos`(판매글 사진)
+- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글), `item_likes`(좋아요), `chat_rooms`·`chat_messages`(채팅), `item_comments`(댓글), `item_reviews`(후기), `notifications`(알림), `reports`(신고), `user_blocks`(차단), `community_posts`·`community_comments`(동네생활). Storage 버킷: `goguma-item-photos`(판매글 사진, 공개), `goguma-chat-photos`(채팅 사진, 비공개). 내부 도우미 함수는 API에 안 열린 `goguma_private` 스키마에 둬요.
 - 인증(`auth.users`)도 두 앱이 같은 공간을 써요. 가계부는 로그인을 안 쓰지만, 사용자를 일괄 삭제하는 등 auth 전체에 영향을 주는 작업은 하지 마세요.
 - DB를 바꿀 때는 **반드시 SQL 파일을 `supabase/migrations/`에 번호 순서대로 남기고**(예: `002_goguma_items.sql`), 모든 새 테이블에 **RLS를 켜고 정책을 함께** 만들어요. 바꾼 뒤에는 Supabase 보안 점검(advisors)을 돌려 확인해요.
 - 데이터를 지우거나 테이블을 없애는 작업은 먼저 주인에게 물어보세요.
+- 보안 점검에 남는 경고 `delete_my_goguma_account` (SECURITY DEFINER)는 **의도된 것**이에요. 회원 탈퇴용이고 `auth.uid()` 본인 계정만 지워요.
+- `profiles.manner_temp`(고구마 온도)는 후기 트리거로만 바뀌어요. 사용자는 `nickname, region, avatar` 칸만 고칠 수 있게 막아 뒀어요.
+- 비밀번호 찾기 메일 링크가 배포 주소에서 동작하려면 Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://goguma-market-blond.vercel.app/**` 를 넣어야 해요.
 - 키: 코드에는 공개용 `publishable` 키만 써요. `service_role`/`secret` 키는 코드·깃에 넣지 마세요.
 
 ## 실행·배포 환경
@@ -41,13 +44,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 주소가 요청 때 정해지는 화면(`/items/[id]`)이 생겨서, `usePathname()`을 쓰는 `BottomNav`도 `<Suspense>`로 감쌌어요.
 - `items`와 `profiles` 사이 연결이 여러 개(판매자·좋아요·채팅·댓글)라서, 판매자 닉네임은 반드시 `seller:profiles!items_seller_id_fkey(nickname)`처럼 **연결 이름을 적어서** 불러와요. 안 적으면 "more than one relationship" 오류로 목록이 안 열려요.
 - 화면을 그리는 도중 `Date.now()`를 직접 부르면 린트 에러가 나요. `src/lib/items.ts`의 `getRequestTime()`을 써요.
+- Next.js 16의 `error.tsx`는 `reset`이 아니라 **`retry`**를 받아요. (`error`의 타입은 `unknown`)
+- 브라우저에서 쓰는 파일(`"use client"`)이 서버 전용 파일(`supabase/server.ts`를 부르는 것)을 import하면 빌드가 깨져요. 둘 다 쓰는 값은 `topics.ts`처럼 따로 빼요.
+- 클라이언트 컴포넌트의 첫 화면 값은 서버와 같아야 해요(예: 안 읽은 숫자는 0에서 시작해 effect에서 채움). 다르면 hydration 오류로 화면이 다시 그려져요.
+- 판매자·구매자를 동시에 시험할 땐 `localhost:3000`과 `127.0.0.1:3000`(쿠키가 따로)을 써요. (`next.config.ts`의 `allowedDevOrigins`)
 - 작업이 끝나면 `npm run build`와 `npm run lint`가 통과하는지 확인해요.
 
 ## 아직 예시(가짜) 데이터인 것
 - 홈·카테고리·검색의 매물은 이제 DB `items` 테이블에서 불러와요. (`src/lib/items.ts`)
 - 판매글 사진은 최대 10장이에요. 사진이 없는 글(샘플 글 등)은 썸네일 자리에 카테고리 그림(`CATEGORIES`의 `emoji`, `tint`)을 보여 줘요.
 - 사진은 브라우저가 Storage에 직접 올려요(Server Action 용량 한도 1MB 때문). 사진 경로는 `{사용자id}/{uuid}.jpg` 모양만 허용해요.
-- 동네생활과 나의 고구마의 일부 메뉴(판매내역, 구매내역 등)는 "준비 중" 화면이에요. 채팅·관심목록은 동작해요.
+- "키워드 알림"만 아직 준비 중이에요. 나머지 메뉴(판매/구매내역, 동네생활, 알림 등)는 동작해요.
 
 ## 디자인 규칙
 - 테마: 구황작물·향토 느낌(한지 배경, 흙색 글자, 고구마 껍질 자주색, 군고구마 속살 노란색).

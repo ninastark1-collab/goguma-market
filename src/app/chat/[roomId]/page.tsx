@@ -2,10 +2,15 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Avatar, TempBadge } from "@/components/Avatar";
 import ChatRoomView from "@/components/ChatRoomView";
 import ItemThumb from "@/components/ItemThumb";
+import { BlockButton, ReportButton } from "@/components/SafetyButtons";
+import { leaveChatRoom } from "@/app/chat/actions";
+import { markSold } from "@/app/items/trade-actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getChatRoom } from "@/lib/social";
+import { isBlockedByMe } from "@/lib/trust";
 import { formatPrice } from "@/lib/market";
 
 export const metadata: Metadata = { title: "대화방 · 고구마마켓" };
@@ -14,7 +19,7 @@ export const metadata: Metadata = { title: "대화방 · 고구마마켓" };
 export default function ChatRoomPage({ params }: PageProps<"/chat/[roomId]">) {
   return (
     <div className="mx-auto max-w-2xl">
-      <Suspense fallback={<p className="py-20 text-center text-soil-soft">대화방 여는 중…</p>}>
+      <Suspense fallback={<div className="h-[70vh] animate-pulse bg-hanji-deep/50" />}>
         <Room params={params} />
       </Suspense>
     </div>
@@ -32,34 +37,74 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
   const { room, messages } = data;
 
   const iAmSeller = room.seller_id === user.id;
-  const other = (iAmSeller ? room.buyer : room.seller)?.nickname ?? "알 수 없음";
+  const otherId = iAmSeller ? room.buyer_id : room.seller_id;
+  const other = iAmSeller ? room.buyer : room.seller;
+  const otherName = other?.nickname ?? "알 수 없음";
+  const blocked = await isBlockedByMe(user.id, otherId);
+  const item = room.item;
+  const back = `/chat/${room.id}`;
 
   return (
     <div className="border-x-0 border-soil sm:border-x-2">
-      {/* 위쪽: 상대 이름 + 어떤 물건 이야기인지 */}
-      <div className="sticky top-[66px] z-10 border-b-2 border-soil bg-hanji/95 backdrop-blur">
+      {/* 위쪽: 상대 프로필 + 어떤 물건 이야기인지 + 메뉴 */}
+      <div className="sticky top-[60px] z-10 border-b-2 border-soil bg-hanji/95 backdrop-blur sm:top-[66px]">
         <div className="flex items-center gap-2 px-4 pt-3">
           <Link href="/chat" className="text-soil-soft hover:text-skin" aria-label="채팅 목록으로">←</Link>
-          <p className="font-display text-lg">{other}</p>
-          <span className="text-xs text-soil-soft">{iAmSeller ? "구매 문의" : "판매자"}</span>
-        </div>
-        {room.item ? (
-          <Link href={`/items/${room.item.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-flesh-soft/40">
-            <ItemThumb item={room.item} size={44} />
-            <span className="min-w-0">
-              <span className="block truncate text-sm">
-                {room.item.status !== "판매중" && <b className="mr-1 text-leaf">{room.item.status}</b>}
-                {room.item.title}
-              </span>
-              <span className="font-display">{formatPrice(room.item.price)}</span>
-            </span>
+          <Link href={`/users/${otherId}`} className="flex min-w-0 items-center gap-2 hover:text-skin">
+            <Avatar emoji={other?.avatar} size={32} />
+            <span className="truncate font-display text-lg">{otherName}</span>
           </Link>
+          <span className="text-xs text-soil-soft">{iAmSeller ? "구매 문의" : "판매자"}</span>
+          <span className="ml-auto">
+            <TempBadge temp={Number(other?.manner_temp ?? 36.5)} compact />
+          </span>
+          {/* 메뉴: 신고 / 차단 / 나가기 */}
+          <details className="relative">
+            <summary className="cursor-pointer list-none px-1 text-xl text-soil-soft" aria-label="메뉴">⋮</summary>
+            <div className="absolute right-0 top-8 z-20 flex w-36 flex-col gap-3 rounded-xl border-2 border-soil bg-hanji p-3 text-sm shadow-[3px_4px_0_var(--color-soil)]">
+              <ReportButton targetType="chat" targetId={room.id} back={back} label="🚨 신고하기" className="text-left hover:text-ember" />
+              <BlockButton otherId={otherId} nickname={otherName} back={back} blocked={blocked} className="text-left hover:text-ember" />
+              <form action={leaveChatRoom.bind(null, room.id)}>
+                <button type="submit" className="text-left hover:text-ember">👋 채팅방 나가기</button>
+              </form>
+            </div>
+          </details>
+        </div>
+        {item ? (
+          <div className="flex items-center gap-3 px-4 py-2.5">
+            <Link href={`/items/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-skin">
+              <ItemThumb item={item} size={44} />
+              <span className="min-w-0">
+                <span className="block truncate text-sm">
+                  {item.status !== "판매중" && <b className="mr-1 text-leaf">{item.status}</b>}
+                  {item.title}
+                </span>
+                <span className="font-display">{formatPrice(item.price)}</span>
+              </span>
+            </Link>
+            {/* 판매자: 이 분과 거래가 끝났으면 바로 거래완료 (구매자로 지정) */}
+            {iAmSeller && item.status !== "거래완료" && !blocked && (
+              <form action={markSold.bind(null, item.id, room.buyer_id, `/items/${item.id}`)}>
+                <button type="submit" className="btn-straw shrink-0 px-3! py-1.5! text-xs">🤝 이 분과 거래완료</button>
+              </form>
+            )}
+            {item.status === "거래완료" && item.buyer_id && (iAmSeller || item.buyer_id === user.id) && (
+              <Link href={`/items/${item.id}`} className="btn-straw shrink-0 px-3! py-1.5! text-xs">💌 후기 남기기</Link>
+            )}
+          </div>
         ) : (
           <p className="px-4 py-2.5 text-sm text-soil-soft">삭제된 판매글이에요.</p>
         )}
       </div>
 
-      <ChatRoomView roomId={room.id} myId={user.id} otherName={other} initialMessages={messages} />
+      <ChatRoomView
+        roomId={room.id}
+        myId={user.id}
+        otherName={otherName}
+        initialMessages={messages}
+        canOffer={!iAmSeller && !!item?.accept_offers && item.status !== "거래완료"}
+        blocked={blocked}
+      />
     </div>
   );
 }

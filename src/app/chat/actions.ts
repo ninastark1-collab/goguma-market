@@ -37,3 +37,18 @@ export async function startChat(itemId: number) {
   revalidatePath("/", "layout");
   redirect(`/chat/${room.id}`);
 }
+
+// 채팅방 나가기: 내 쪽 '나간 시각'만 기록해요. (상대가 새 메시지를 보내면 목록에 다시 나타나요)
+export async function leaveChatRoom(roomId: number) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/chat");
+
+  const supabase = await createClient();
+  const { data: room } = await supabase.from("chat_rooms").select("seller_id, buyer_id").eq("id", roomId).maybeSingle();
+  if (!room) redirect("/chat");
+  const column = room.seller_id === user.id ? "seller_left_at" : "buyer_left_at";
+  await supabase.from("chat_rooms").update({ [column]: new Date().toISOString() }).eq("id", roomId);
+
+  revalidatePath("/chat");
+  redirect("/chat?toast=left");
+}

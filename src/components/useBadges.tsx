@@ -50,12 +50,16 @@ function start() {
 //       아래 메뉴의 '미리 그려 두는 모양'에서는 주소를 알 수 없어서 빈 값이 와요)
 export function useBadges(path = "") {
   const pathname = path;
-  const [counts, setCounts] = useState<Counts>(current);
+  // 처음엔 서버가 그린 화면과 똑같이 0에서 시작해요. (다르면 React가 화면 전체를 다시 그려야 해요)
+  const [counts, setCounts] = useState<Counts>({ chat: 0, noti: 0 });
 
   useEffect(() => {
     start();
     listeners.add(setCounts);
+    // 이미 세어 둔 숫자가 있으면 바로 다음 순간에 보여 줘요.
+    const t = setTimeout(() => setCounts(current), 0);
     return () => {
+      clearTimeout(t);
       listeners.delete(setCounts);
     };
   }, []);
