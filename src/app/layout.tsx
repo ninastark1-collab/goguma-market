@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Gowun_Dodum, Jua } from "next/font/google";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -22,6 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* 휴대폰에선 아래 고정 메뉴에 가리지 않도록 여백을 둡니다 */}
         <footer className="border-t-2 border-dashed border-straw pb-24 pt-6 text-center text-sm text-soil-soft md:pb-6">
           🍠 고구마마켓 · 우리 동네 밭에서 캐낸 중고거래
+          {/* 예시 판매글 사진의 작가·라이선스 표시 (CC BY 사진은 출처를 밝혀야 해요) */}
+          <Link href="/credits" className="ml-2 text-xs underline underline-offset-2 hover:text-skin">
+            사진 출처
+          </Link>
         </footer>
         <BottomNav />
       </body>
