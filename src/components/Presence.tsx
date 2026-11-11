@@ -47,7 +47,10 @@ function start() {
 
     // 마지막 접속 시각 남기기: 지금 한 번, 그다음 2분마다 (DB가 '지금' 시각으로 고정해요)
     if (me && share) {
-      const beat = () => supabase.from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", me);
+      // 주의: Supabase 질의는 then()이나 await를 해야 실제로 서버에 보내져요.
+      const beat = () => {
+        void supabase.from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", me).then(() => {});
+      };
       beat();
       setInterval(beat, 120_000);
     }

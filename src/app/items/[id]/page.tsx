@@ -291,8 +291,11 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
         ) : (
           <ul className="mt-3 divide-y-2 divide-dashed divide-straw">
             {/* 원댓글 → 그 아래에 답글(들여쓰기) */}
-            {visibleComments.filter((c) => !c.parent_id).map((c) => {
+            {comments.filter((c) => !c.parent_id).map((c) => {
               const replies = visibleComments.filter((r) => r.parent_id === c.id);
+              // 내가 차단한 사람의 원댓글: 내용은 가리고, 다른 사람들의 답글은 그대로 보여 줘요.
+              const parentBlocked = blockedIds.includes(c.author_id);
+              if (parentBlocked && replies.length === 0) return null;
               const row = (x: typeof c, isReply: boolean) => {
                 const bySeller = x.author_id === item.seller_id;
                 // 지우기: 댓글 쓴 사람이거나, 이 글의 판매자일 때
@@ -319,9 +322,9 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               };
               return (
                 <li key={c.id} className="py-3">
-                  {row(c, false)}
+                  {parentBlocked ? <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p> : row(c, false)}
                   {replies.map((r) => row(r, true))}
-                  {user && (
+                  {user && !parentBlocked && (
                     <div className="ml-7">
                       <ReplyToggle>
                         <CommentForm itemId={item.id} parentId={c.id} />

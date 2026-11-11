@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { friendlyDbError, RATINGS, type Rating } from "@/lib/market";
+import { safePath } from "@/lib/safe-path";
 
 // 거래완료로 바꾸면서 구매자를 정해요. back: 끝나고 돌아갈 주소
 export async function markSold(itemId: number, buyerId: string, back: string) {
@@ -24,7 +25,8 @@ export async function markSold(itemId: number, buyerId: string, back: string) {
   if (!data?.length) throw new Error("내 글만 거래완료로 바꿀 수 있어요.");
 
   revalidatePath("/", "layout");
-  redirect(`${back.startsWith("/") ? back : `/items/${itemId}`}?toast=sold`);
+  // 돌아갈 주소는 우리 사이트 경로만 ('//다른사이트'나 '/\다른사이트'는 막아요)
+  redirect(`${safePath(back, `/items/${itemId}`)}?toast=sold`);
 }
 
 export type BumpState = { error?: string } | undefined;

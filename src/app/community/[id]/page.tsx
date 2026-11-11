@@ -69,7 +69,11 @@ async function PostDetail({ params }: { params: PageProps<"/community/[id]">["pa
         ) : (
           <ul className="mt-3 divide-y-2 divide-dashed divide-straw">
             {/* 원댓글 → 그 아래에 답글(들여쓰기) */}
-            {visible.filter((c) => !c.parent_id).map((c) => {
+            {comments.filter((c) => !c.parent_id).map((c) => {
+              // 내가 차단한 사람의 원댓글: 내용은 가리고, 다른 사람들의 답글은 그대로 보여 줘요.
+              const replies = visible.filter((r) => r.parent_id === c.id);
+              const parentBlocked = blocked.includes(c.author_id);
+              if (parentBlocked && replies.length === 0) return null;
               const row = (x: typeof c, isReply: boolean) => (
                 <div key={x.id} className={isReply ? "mt-3 ml-7 rounded-xl bg-hanji-deep/50 px-3 py-2" : ""}>
                   <div className="flex items-center gap-1.5 text-sm">
@@ -88,9 +92,9 @@ async function PostDetail({ params }: { params: PageProps<"/community/[id]">["pa
               );
               return (
                 <li key={c.id} className="py-3">
-                  {row(c, false)}
-                  {visible.filter((r) => r.parent_id === c.id).map((r) => row(r, true))}
-                  {user && (
+                  {parentBlocked ? <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p> : row(c, false)}
+                  {replies.map((r) => row(r, true))}
+                  {user && !parentBlocked && (
                     <div className="ml-7">
                       <ReplyToggle>
                         <PostCommentForm postId={post.id} parentId={c.id} />

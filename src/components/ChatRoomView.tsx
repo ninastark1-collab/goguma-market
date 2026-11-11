@@ -83,7 +83,18 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
             if (payload.eventType === "INSERT" && msg.sender_id !== myId) markRead();
           },
         )
-        .subscribe();
+        // 실시간 연결이 준비된 순간, 그 사이에 온 메시지가 있으면 채워 넣어요. (연결 전 틈에 온 메시지 놓치지 않기)
+        .subscribe(async (status) => {
+          if (status !== "SUBSCRIBED") return;
+          const { data: latest } = await supabase
+            .from("chat_messages")
+            .select("*")
+            .eq("room_id", roomId)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          (latest ?? []).reverse().forEach((m) => upsert(m as ChatMessage));
+          markRead();
+        });
       markRead();
     })();
 

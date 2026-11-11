@@ -45,8 +45,8 @@ export default function ViewTracker({ item, userId }: { item: RecentItem; userId
         viewer = crypto.randomUUID();
       }
     }
-    // 이미 오늘 센 조회면 DB가 '중복'으로 무시해요. (ignoreDuplicates)
-    createClient().from("item_views").upsert({ item_id: item.id, viewer }, { ignoreDuplicates: true }).then(() => {});
+    // 이미 오늘 센 조회면 DB가 '중복(409)'으로 거절해요. 그건 정상이라 그냥 무시해요.
+    createClient().from("item_views").insert({ item_id: item.id, viewer }).then(() => {});
   }, [item, userId]);
   return null;
 }

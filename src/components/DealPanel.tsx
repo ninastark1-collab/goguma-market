@@ -74,7 +74,10 @@ export default function DealPanel(p: Props) {
           load();
           router.refresh(); // 위쪽 물건 상태(예약중 등)도 새로 그려요
         })
-        .subscribe();
+        // 실시간 연결이 준비된 순간에 한 번 더 불러와요. (연결되기 전 틈에 생긴 변화도 놓치지 않게)
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") load();
+        });
       load();
     })();
     return () => {

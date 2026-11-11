@@ -94,6 +94,7 @@ export const REPORT_REASONS = ["사기 의심", "판매 금지 물품", "욕설�
 export function friendlyDbError(message: string) {
   if (message.includes("rate_limited")) return "너무 빨리 여러 번 보냈어요. 잠시 후 다시 시도해 주세요.";
   if (message.includes("bump_too_soon")) return "끌어올리기는 하루에 한 번만 할 수 있어요.";
+  if (message.includes("admin_only")) return "운영자만 할 수 있는 일이에요.";
   if (message.includes("bad_parent")) return "답글을 달 수 없는 댓글이에요. (답글에는 답글을 달 수 없어요)";
   if (message.includes("item_not_available")) return "이미 다른 분과 약속이 잡혔거나 판매가 끝난 물건이에요.";
   if (message.includes("bad_deal_step")) return "지금 단계에서는 할 수 없는 동작이에요. 화면을 새로 고쳐 주세요.";

@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { friendlyDbError, REPORT_REASONS } from "@/lib/market";
+import { safePath } from "@/lib/safe-path";
 
 export type ReportState = { error?: string } | undefined;
 
@@ -16,7 +17,7 @@ const TYPES = ["item", "user", "comment", "chat", "post"] as const;
 // 다녀올 주소는 우리 사이트 안의 경로만 허락해요.
 function safeBack(value: FormDataEntryValue | null) {
   const v = typeof value === "string" ? value : "";
-  return v.startsWith("/") && !v.startsWith("//") ? v : "/";
+  return safePath(v, "/");
 }
 
 export async function submitReport(_prev: ReportState, formData: FormData): Promise<ReportState> {
@@ -50,7 +51,7 @@ export async function blockUser(otherId: string, back: string) {
   if (error) throw new Error(friendlyDbError(error.message));
 
   revalidatePath("/", "layout");
-  const to = back.startsWith("/") && !back.startsWith("//") ? back : "/";
+  const to = safePath(back, "/");
   redirect(`${to}${to.includes("?") ? "&" : "?"}toast=blocked`);
 }
 
@@ -62,6 +63,6 @@ export async function unblockUser(otherId: string, back: string) {
   await supabase.from("user_blocks").delete().eq("blocker_id", user.id).eq("blocked_id", otherId);
 
   revalidatePath("/", "layout");
-  const to = back.startsWith("/") && !back.startsWith("//") ? back : "/";
+  const to = safePath(back, "/");
   redirect(`${to}${to.includes("?") ? "&" : "?"}toast=unblocked`);
 }

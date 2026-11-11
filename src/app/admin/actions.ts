@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { safePath } from "@/lib/safe-path";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -35,7 +36,7 @@ export async function setItemHidden(itemId: number, hidden: boolean, back: strin
   const { error } = await supabase.from("items").update({ is_hidden: hidden }).eq("id", itemId);
   if (error) throw new Error("바꾸지 못했어요: " + error.message);
   revalidatePath("/", "layout");
-  const to = back.startsWith("/") && !back.startsWith("//") ? back : "/admin/reports";
+  const to = safePath(back, "/admin/reports"); // 우리 사이트 경로만
   redirect(`${to}${to.includes("?") ? "&" : "?"}toast=${hidden ? "hidden" : "shown"}`);
 }
 
