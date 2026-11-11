@@ -76,9 +76,16 @@ export function useOnline() {
 export function OnlineCount() {
   const ids = useOnline();
   return (
-    <Link href="/online" className="hidden items-center gap-1 rounded-full border-2 border-soil/20 px-2 py-0.5 text-xs text-soil-soft hover:border-leaf sm:inline-flex" title="지금 접속 중인 이웃">
+    // 휴대폰에선 "🟢 3"처럼 짧게, 넓은 화면에선 "3명 접속 중"
+    <Link
+      href="/online"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border-2 border-soil/20 px-2 py-0.5 text-xs text-soil-soft hover:border-leaf"
+      title="지금 접속 중인 이웃"
+      aria-label={`지금 ${ids.size}명 접속 중`}
+    >
       <span className="h-2 w-2 rounded-full bg-[#3fbf5f]" aria-hidden />
-      {ids.size}명 접속 중
+      {ids.size}
+      <span className="hidden sm:inline">명 접속 중</span>
     </Link>
   );
 }
