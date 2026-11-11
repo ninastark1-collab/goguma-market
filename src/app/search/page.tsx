@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import SearchBar from "@/components/SearchBar";
-import ItemCard from "@/components/ItemCard";
-import { CATEGORIES, SAMPLE_ITEMS } from "@/lib/market";
+import ItemList, { EmptyBox } from "@/components/ItemList";
+import { searchItems } from "@/lib/items";
 
 export const metadata: Metadata = { title: "검색 · 고구마마켓" };
 
@@ -20,13 +20,8 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
   const { q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
 
-  // 제목이나 카테고리 이름에 검색어가 들어 있으면 보여 줍니다.
-  const items = query
-    ? SAMPLE_ITEMS.filter((i) => {
-        const cat = CATEGORIES.find((c) => c.slug === i.category)?.name ?? "";
-        return i.title.includes(query) || cat.includes(query);
-      })
-    : [];
+  // 제목이나 카테고리 이름에 검색어가 들어 있는 판매글을 DB에서 찾아요.
+  const items = query ? await searchItems(query) : [];
 
   return (
     <>
@@ -36,19 +31,18 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
           ‘{query}’ 검색 결과 <span className="text-skin">{items.length}</span>개
         </p>
       )}
-      {items.length > 0 ? (
-        <ul className="mt-4 grid grid-cols-1 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </ul>
-      ) : (
-        <div className="stitch mt-8 flex flex-col items-center gap-2 px-6 py-14 text-center">
-          <span className="text-5xl">🔍</span>
-          <p className="font-display text-xl">{query ? "앗, 찾는 물건이 아직 없어요" : "무엇을 찾고 계세요?"}</p>
-          <p className="text-sm text-soil-soft">다른 검색어로 다시 찾아보세요.</p>
-        </div>
-      )}
+      <div className="mt-4">
+        <ItemList
+          items={items}
+          empty={
+            <EmptyBox
+              emoji="🔍"
+              title={query ? "앗, 찾는 물건이 아직 없어요" : "무엇을 찾고 계세요?"}
+              desc="다른 검색어로 다시 찾아보세요."
+            />
+          }
+        />
+      </div>
     </>
   );
 }

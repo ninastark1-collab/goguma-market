@@ -39,12 +39,30 @@ npm run dev     # http://localhost:3000
 - `middleware.ts` 대신 `proxy.ts` 를 씁니다.
 - Cache Components 가 켜져 있어서, 쿠키(로그인 정보)를 읽는 컴포넌트는 `<Suspense>` 안에 둬야 합니다.
 
+## 2단계: 판매글 CRUD (사진 제외) ✅
+
+CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delete). 사진은 다음 단계에서 붙여요.
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `supabase/migrations/002_goguma_items.sql` | `items` 테이블 + RLS(누구나 보기, 본인만 쓰기/고치기/지우기) + 수정 시각 자동 갱신 |
+| `src/lib/items.ts` | 판매글 목록 / 검색 / 한 개 읽기 (R) |
+| `src/app/items/actions.ts` | `createItem`, `updateItem`, `deleteItem` Server Actions (C, U, D) |
+| `src/components/ItemForm.tsx` | 글쓰기·고치기 공용 입력 폼 (제목, 카테고리, 가격, 설명, 판매 상태) |
+| `src/app/write` | 판매글 쓰기 화면 |
+| `src/app/items/[id]` | 판매글 상세 화면 (내 글이면 수정/삭제 버튼) |
+| `src/app/items/[id]/edit` | 판매글 고치기 화면 (본인만) |
+| `src/components/ItemList.tsx`, `ItemCard.tsx` | 홈·카테고리·검색의 판매글 목록 (예시 데이터 → DB) |
+
+- 사진이 없는 동안 썸네일 자리에는 카테고리 그림과 배경색을 보여 줘요.
+- 판매 상태(판매중/예약중/거래완료)는 '고치기'에서 바꿀 수 있어요.
+
 ## 디자인 테마 — 구황작물 / 향토
 한지 배경, 흙색 글자, 고구마 껍질 자주색 버튼, 군고구마 속살 노란색 강조.
 색상과 버튼 스타일은 `src/app/globals.css` 의 `@theme` 과 `@utility` 에 모여 있습니다.
 
 ## 다음 단계 (예정)
-- [ ] 물건 올리기 (사진 업로드: Supabase Storage)
-- [ ] 동네 물건 목록 / 상세
+- [x] 판매글 올리기 / 목록 / 상세 / 수정 / 삭제 (사진 제외)
+- [ ] 판매글 사진 업로드 (Supabase Storage)
 - [ ] 찜하기, 채팅
 - [ ] 배포 (가계부와 다른 주소로)

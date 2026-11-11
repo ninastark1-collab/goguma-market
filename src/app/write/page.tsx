@@ -1,8 +1,22 @@
 import type { Metadata } from "next";
-import ComingSoon from "@/components/ComingSoon";
+import Link from "next/link";
+import ItemForm from "@/components/ItemForm";
+import { createItem } from "@/app/items/actions";
 
 export const metadata: Metadata = { title: "내 물건 팔기 · 고구마마켓" };
 
+// 판매글 쓰기 화면 (로그인 안 했으면 proxy.ts가 로그인 화면으로 보내요)
 export default function WritePage() {
-  return <ComingSoon emoji="📸" title="내 물건 팔기" desc="사진, 제목, 카테고리, 가격을 적어 우리 동네에 물건을 올리는 화면이 다음 단계에서 만들어져요." />;
+  return (
+    <div className="mx-auto max-w-xl px-4 py-8">
+      <Link href="/" className="text-sm text-soil-soft hover:text-skin">← 홈으로</Link>
+      <div className="card-sack mt-3 px-5 py-6 sm:px-8">
+        <h1 className="font-display text-3xl">내 물건 팔기 🧺</h1>
+        <p className="mt-1 text-sm text-soil-soft">사진 올리기는 곧 추가될 예정이에요. 지금은 글로만 올려요.</p>
+        <div className="mt-6">
+          <ItemForm action={createItem} />
+        </div>
+      </div>
+    </div>
+  );
 }

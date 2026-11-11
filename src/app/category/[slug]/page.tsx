@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ItemCard from "@/components/ItemCard";
-import { CATEGORIES, getCategory, SAMPLE_ITEMS } from "@/lib/market";
+import { Suspense } from "react";
+import ItemList, { EmptyBox } from "@/components/ItemList";
+import { getItems } from "@/lib/items";
+import { CATEGORIES, getCategory } from "@/lib/market";
 
 // 카테고리 페이지는 빌드할 때 미리 만들어 둡니다.
 export function generateStaticParams() {
@@ -18,8 +20,6 @@ export default async function CategoryPage({ params }: PageProps<"/category/[slu
   const { slug } = await params;
   const category = getCategory(slug);
   if (!category) notFound();
-
-  const items = SAMPLE_ITEMS.filter((i) => i.category === slug);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -44,20 +44,26 @@ export default async function CategoryPage({ params }: PageProps<"/category/[slu
         ))}
       </div>
 
-      {items.length > 0 ? (
-        <ul className="mt-6 grid grid-cols-1 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </ul>
-      ) : (
-        <div className="stitch mt-8 flex flex-col items-center gap-2 px-6 py-14 text-center">
-          <span className="text-5xl">🌱</span>
-          <p className="font-display text-xl">아직 이 밭엔 물건이 없어요</p>
-          <p className="text-sm text-soil-soft">첫 번째로 물건을 올려 보세요!</p>
-          <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
-        </div>
-      )}
+      {/* 이 카테고리의 판매글: 요청 때마다 DB에서 불러와요 */}
+      <div className="mt-6">
+        <Suspense fallback={<p className="py-14 text-center text-soil-soft">고구마 캐는 중…</p>}>
+          <CategoryItems slug={slug} />
+        </Suspense>
+      </div>
     </div>
+  );
+}
+
+async function CategoryItems({ slug }: { slug: string }) {
+  const items = await getItems({ category: slug });
+  return (
+    <ItemList
+      items={items}
+      empty={
+        <EmptyBox emoji="🌱" title="아직 이 밭엔 물건이 없어요" desc="첫 번째로 물건을 올려 보세요!">
+          <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
+        </EmptyBox>
+      }
+    />
   );
 }

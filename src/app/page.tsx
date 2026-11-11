@@ -3,9 +3,9 @@ import Link from "next/link";
 import GogumaLogo from "@/components/GogumaLogo";
 import SearchBar from "@/components/SearchBar";
 import CategoryGrid from "@/components/CategoryGrid";
-import ItemCard from "@/components/ItemCard";
+import ItemList, { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
-import { SAMPLE_ITEMS } from "@/lib/market";
+import { getItems } from "@/lib/items";
 
 const HOT_KEYWORDS = ["고구마", "김장", "패딩", "자전거", "유모차", "캠핑"];
 
@@ -57,17 +57,12 @@ export default function Home({ searchParams }: PageProps<"/">) {
         <CategoryGrid />
       </section>
 
-      {/* 매물 목록 */}
+      {/* 매물 목록: DB에서 최신 판매글을 불러와요 */}
       <section className="mt-12">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="font-display text-xl">우리 동네 인기 매물 🔥</h2>
-          <span className="text-xs text-soil-soft">예시 매물이에요 · 물건 올리기는 다음 단계</span>
-        </div>
-        <ul className="grid grid-cols-1 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">
-          {SAMPLE_ITEMS.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </ul>
+        <h2 className="mb-4 font-display text-xl">방금 올라온 우리 동네 매물 🌱</h2>
+        <Suspense fallback={<p className="py-14 text-center text-soil-soft">고구마 캐는 중…</p>}>
+          <LatestItems />
+        </Suspense>
       </section>
 
       {/* 글쓰기 떠 있는 버튼 (PC) */}
@@ -93,6 +88,20 @@ async function Welcome({ searchParams }: { searchParams: PageProps<"/">["searchP
     <p className="card-sack mb-6 px-5 py-3 font-display text-lg text-leaf">
       🌱 {user.nickname}님, 고구마밭에 오신 걸 환영해요!
     </p>
+  );
+}
+
+async function LatestItems() {
+  const items = await getItems();
+  return (
+    <ItemList
+      items={items}
+      empty={
+        <EmptyBox emoji="🌱" title="아직 밭이 비어 있어요" desc="첫 번째로 물건을 올려 보세요!">
+          <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
+        </EmptyBox>
+      }
+    />
   );
 }
 
