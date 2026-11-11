@@ -105,7 +105,9 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages 
 
   return (
     <div className="flex flex-col">
-      <div className="flex min-h-[50vh] flex-col gap-1.5 px-4 py-4">
+      {/* 메시지 영역이 남은 화면 높이를 채워서, 대화가 짧아도 입력칸이 항상 화면 아래에 붙어요.
+          (100dvh = 휴대폰 주소창까지 고려한 실제 화면 높이, 빼는 값 = 위쪽 머리말 + 방 정보 + 아래 메뉴·입력칸) */}
+      <div className="flex min-h-[calc(100dvh-19rem)] flex-col gap-1.5 px-4 py-4 md:min-h-[calc(100dvh-15rem)]">
         {messages.length === 0 && (
           <p className="my-auto text-center text-sm text-soil-soft">
             {otherName}님에게 첫 인사를 건네 보세요 🌱

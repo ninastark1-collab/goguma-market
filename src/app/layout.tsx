@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
+import Toaster from "@/components/Toaster";
 import { Gowun_Dodum, Jua } from "next/font/google";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -29,6 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </Link>
         </footer>
         <BottomNav />
+        {/* 토스트는 주소의 ?toast=를 읽어서, 요청 때만 알 수 있으니 Suspense 안에 둬요 */}
+        <Suspense fallback={null}>
+          <Toaster />
+        </Suspense>
       </body>
     </html>
   );

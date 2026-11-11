@@ -86,6 +86,16 @@ export default function ItemForm({ action, item }: Props) {
         <span className="text-xs text-soil-soft">0원으로 적으면 &lsquo;나눔 🧡&rsquo;으로 올라가요.</span>
       </label>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="acceptOffers"
+          defaultChecked={state?.fields ? state.fields.acceptOffers === "on" : (item?.accept_offers ?? false)}
+          className="h-4 w-4 accent-[var(--color-skin)]"
+        />
+        💰 가격 제안 받기 <span className="text-xs text-soil-soft">(구매자가 채팅에서 원하는 가격을 제안할 수 있어요)</span>
+      </label>
+
       {/* 판매 상태는 글을 올린 뒤 '고치기'에서만 바꿀 수 있어요 */}
       {item && (
         <fieldset className="flex flex-col gap-1.5">

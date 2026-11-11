@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { friendlyDbError } from "@/lib/market";
 
 export type CommentState = { error?: string; ok?: number } | undefined;
 
@@ -21,7 +22,7 @@ export async function addComment(itemId: number, _prev: CommentState, formData: 
 
   const supabase = await createClient();
   const { error } = await supabase.from("item_comments").insert({ item_id: itemId, author_id: user.id, body });
-  if (error) return { error: "댓글을 남기지 못했어요: " + error.message };
+  if (error) return { error: friendlyDbError(error.message) };
 
   revalidatePath(`/items/${itemId}`);
   // ok에 시각을 넣어 두면, 폼이 '방금 성공했다'는 걸 알고 입력칸을 비워요.

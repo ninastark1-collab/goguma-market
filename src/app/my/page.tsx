@@ -2,30 +2,38 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import GogumaLogo from "@/components/GogumaLogo";
 import LogoutButton from "@/components/LogoutButton";
+import { Avatar, TempBadge } from "@/components/Avatar";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "나의 고구마 · 고구마마켓" };
 
 // href가 있는 메뉴만 들어갈 수 있고, 나머지는 '준비 중'이에요.
-const MY_MENUS: { group: string; items: { icon: string; label: string; href?: string }[] }[] = [
+type Menu = { icon: string; label: string; href?: string };
+const MY_MENUS: { group: string; items: Menu[] }[] = [
   { group: "나의 거래", items: [
-    { icon: "🧺", label: "판매내역" },
-    { icon: "🛍️", label: "구매내역" },
+    { icon: "🧺", label: "판매내역", href: "/my/sales" },
+    { icon: "🛍️", label: "구매내역", href: "/my/purchases" },
     { icon: "♡", label: "관심목록", href: "/my/likes" },
+    { icon: "💌", label: "받은 거래 후기", href: "/users/me" },
   ] },
   { group: "나의 동네", items: [
-    { icon: "📍", label: "내 동네 설정" },
-    { icon: "🔔", label: "키워드 알림" },
-    { icon: "🌾", label: "동네생활 글" },
+    { icon: "📍", label: "내 동네 설정", href: "/my/edit" },
+    { icon: "🌾", label: "내가 쓴 동네생활 글", href: "/community?mine=1" },
+    { icon: "🔔", label: "알림", href: "/notifications" },
+    { icon: "🏷️", label: "키워드 알림" },
+  ] },
+  { group: "계정", items: [
+    { icon: "🍠", label: "내 정보 수정", href: "/my/edit" },
+    { icon: "🔑", label: "비밀번호 바꾸기", href: "/my/password" },
+    { icon: "🚫", label: "차단한 사용자", href: "/my/blocks" },
   ] },
 ];
 
 export default function MyPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <Suspense fallback={<p className="py-20 text-center text-soil-soft">고구마 굽는 중…</p>}>
+      <Suspense fallback={<div className="card-sack h-56 animate-pulse" />}>
         <Profile />
       </Suspense>
 
@@ -67,15 +75,13 @@ async function Profile() {
   if (!user) redirect("/login?next=/my");
 
   const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+    ? new Date(user.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Seoul" })
     : "-";
 
   return (
     <div className="card-sack px-6 py-6">
       <div className="flex items-center gap-4">
-        <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-2 border-soil bg-flesh-soft">
-          <GogumaLogo size={64} />
-        </div>
+        <Avatar emoji={user.avatar} size={72} />
         <div className="min-w-0">
           <h1 className="truncate font-display text-2xl">{user.nickname}</h1>
           <p className="text-sm text-soil-soft">📍 {user.region ?? "동네를 아직 정하지 않았어요"}</p>
@@ -83,19 +89,14 @@ async function Profile() {
         </div>
       </div>
 
-      {/* 고구마 온도: 당근의 '매너온도'처럼 거래 신뢰도를 보여 줄 자리 */}
+      {/* 고구마 온도: 거래 후기로 오르내려요 (당근의 매너온도처럼) */}
       <div className="mt-5">
-        <div className="flex justify-between text-sm">
-          <span className="font-display">고구마 온도 🔥</span>
-          <span className="font-display text-flesh">36.5℃</span>
-        </div>
-        <div className="mt-1.5 h-3 overflow-hidden rounded-full border-2 border-soil bg-hanji-deep">
-          <div className="h-full w-[36.5%] bg-flesh" />
-        </div>
-        <p className="mt-1 text-xs text-soil-soft">첫 온도는 36.5℃에서 시작해요 · 가입일 {joined}</p>
+        <TempBadge temp={user.temp} />
+        <p className="mt-1 text-xs text-soil-soft">거래 후기를 받을수록 따뜻해져요 · 가입일 {joined}</p>
       </div>
 
       <div className="mt-5 flex gap-2">
+        <Link href={`/users/${user.id}`} className="btn-straw flex-1 text-center text-sm">내 프로필 보기</Link>
         <Link href="/write" className="btn-goguma flex-1 px-3! py-2! text-sm!">+ 내 물건 팔기</Link>
         <LogoutButton className="btn-straw text-sm h-full" />
       </div>

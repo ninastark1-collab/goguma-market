@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import ItemList, { EmptyBox } from "@/components/ItemList";
-import { getItems } from "@/lib/items";
+import { findItems } from "@/lib/items";
+import { getCurrentUser } from "@/lib/auth";
+import { ItemGridSkeleton } from "@/components/Skeletons";
 import { CATEGORIES, getCategory } from "@/lib/market";
 
 // 카테고리 페이지는 빌드할 때 미리 만들어 둡니다.
@@ -46,7 +48,7 @@ export default async function CategoryPage({ params }: PageProps<"/category/[slu
 
       {/* 이 카테고리의 판매글: 요청 때마다 DB에서 불러와요 */}
       <div className="mt-6">
-        <Suspense fallback={<p className="py-14 text-center text-soil-soft">고구마 캐는 중…</p>}>
+        <Suspense fallback={<ItemGridSkeleton />}>
           <CategoryItems slug={slug} />
         </Suspense>
       </div>
@@ -55,7 +57,8 @@ export default async function CategoryPage({ params }: PageProps<"/category/[slu
 }
 
 async function CategoryItems({ slug }: { slug: string }) {
-  const items = await getItems({ category: slug });
+  const user = await getCurrentUser();
+  const { items } = await findItems({ category: slug, limit: 120, hideBlocked: user?.id });
   return (
     <ItemList
       items={items}

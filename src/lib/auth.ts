@@ -18,7 +18,7 @@ export const getCurrentUser = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nickname, region, created_at")
+    .select("nickname, region, created_at, avatar, manner_temp")
     .eq("id", claims.sub)
     .maybeSingle();
 
@@ -30,5 +30,7 @@ export const getCurrentUser = cache(async () => {
     nickname: profile?.nickname ?? meta.nickname ?? "고구마",
     region: profile?.region ?? meta.region ?? null,
     createdAt: profile?.created_at ?? null,
+    avatar: profile?.avatar ?? "🍠",
+    temp: Number(profile?.manner_temp ?? 36.5),
   };
 });

@@ -42,7 +42,11 @@ export default function ItemCard({ item, now }: { item: Item; now: number }) {
         <div className="min-w-0 flex-1 sm:mt-3">
           <h3 className="line-clamp-2 leading-snug text-soil group-hover:text-skin">{item.title}</h3>
           <p className="mt-1 text-xs text-soil-soft">
-            {item.region ?? "동네 미설정"} · {timeAgo(item.created_at, now)}
+            {item.region ?? "동네 미설정"} ·{" "}
+            {/* 끌어올린 글은 '끌올 n분 전'으로 보여요 */}
+            {new Date(item.bumped_at).getTime() - new Date(item.created_at).getTime() > 60_000
+              ? `끌올 ${timeAgo(item.bumped_at, now)}`
+              : timeAgo(item.created_at, now)}
           </p>
           <p className="mt-1 flex items-center gap-1.5 font-display text-lg">
             {item.status !== "판매중" && (

@@ -5,7 +5,8 @@ import SearchBar from "@/components/SearchBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import ItemList, { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
-import { getItems } from "@/lib/items";
+import { findItems } from "@/lib/items";
+import { ItemGridSkeleton } from "@/components/Skeletons";
 
 const HOT_KEYWORDS = ["고구마", "김장", "패딩", "자전거", "유모차", "캠핑"];
 
@@ -57,11 +58,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
         <CategoryGrid />
       </section>
 
-      {/* 매물 목록: DB에서 최신 판매글을 불러와요 */}
+      {/* 매물 목록: 전체 / 내 동네 탭 + 더 보기 */}
       <section className="mt-12">
-        <h2 className="mb-4 font-display text-xl">방금 올라온 우리 동네 매물 🌱</h2>
-        <Suspense fallback={<p className="py-14 text-center text-soil-soft">고구마 캐는 중…</p>}>
-          <LatestItems />
+        <Suspense fallback={<><h2 className="mb-4 font-display text-xl">방금 올라온 우리 동네 매물 🌱</h2><ItemGridSkeleton /></>}>
+          <LatestItems searchParams={searchParams} />
         </Suspense>
       </section>
 
@@ -91,17 +91,60 @@ async function Welcome({ searchParams }: { searchParams: PageProps<"/">["searchP
   );
 }
 
-async function LatestItems() {
-  const items = await getItems();
+const PAGE = 24; // 한 번에 보여 줄 개수 (더 보기를 누를 때마다 이만큼 늘어나요)
+
+async function LatestItems({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  const { area, n } = await searchParams;
+  const user = await getCurrentUser();
+  // 내 동네 탭: 로그인했고 동네를 정해 둔 사람만
+  const mine = area === "mine" && !!user?.region;
+  const limit = Math.min(Number(n) || PAGE, 300);
+  const { items, hasMore } = await findItems({
+    region: mine ? user!.region! : undefined,
+    limit,
+    hideBlocked: user?.id,
+  });
+
+  const tab = (active: boolean) =>
+    `rounded-full border-2 px-3 py-1 text-sm ${active ? "border-soil bg-skin text-white" : "border-soil/30 bg-[#fffaf0] hover:border-skin"}`;
+
   return (
-    <ItemList
-      items={items}
-      empty={
-        <EmptyBox emoji="🌱" title="아직 밭이 비어 있어요" desc="첫 번째로 물건을 올려 보세요!">
-          <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
-        </EmptyBox>
-      }
-    />
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-xl">방금 올라온 {mine ? "내 동네" : "우리 동네"} 매물 🌱</h2>
+        <nav className="flex gap-1.5" aria-label="동네 범위">
+          <Link href="/" scroll={false} className={tab(!mine)}>전체</Link>
+          {user?.region ? (
+            <Link href="/?area=mine" scroll={false} className={tab(mine)}>📍 {user.region.split(" ").pop()}</Link>
+          ) : (
+            <Link href={user ? "/my/edit" : "/login?next=/my/edit"} className={tab(false)}>📍 내 동네 정하기</Link>
+          )}
+        </nav>
+      </div>
+      <ItemList
+        items={items}
+        empty={
+          <EmptyBox
+            emoji="🌱"
+            title={mine ? "아직 우리 동네엔 물건이 없어요" : "아직 밭이 비어 있어요"}
+            desc="첫 번째로 물건을 올려 보세요!"
+          >
+            <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
+          </EmptyBox>
+        }
+      />
+      {hasMore && (
+        <div className="mt-8 text-center">
+          <Link
+            href={`/?${new URLSearchParams({ ...(mine ? { area: "mine" } : {}), n: String(limit + PAGE) })}`}
+            scroll={false}
+            className="btn-straw"
+          >
+            더 보기 ↓
+          </Link>
+        </div>
+      )}
+    </>
   );
 }
 

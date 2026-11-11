@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getCategory, MAX_PHOTOS, PHOTO_BUCKET, STATUSES, type ItemStatus } from "@/lib/market";
+import { friendlyDbError, getCategory, MAX_PHOTOS, PHOTO_BUCKET, STATUSES, type ItemStatus } from "@/lib/market";
 
 export type ItemFormState = {
   error?: string;
@@ -24,7 +24,8 @@ function readForm(formData: FormData, userId: string) {
   const description = String(formData.get("description") ?? "").trim();
   const status = String(formData.get("status") ?? "판매중");
   const photos = formData.getAll("photos").map(String);
-  const fields = { title, category, price: priceText, description, status };
+  const acceptOffers = formData.get("acceptOffers") === "on"; // 가격 제안 받기 체크
+  const fields = { title, category, price: priceText, description, status, acceptOffers: formData.get("acceptOffers") === "on" ? "on" : "" };
 
   if (title.length < 2 || title.length > 40) return { fields, error: "제목은 2~40자로 적어 주세요." };
   if (!getCategory(category)) return { fields, error: "카테고리를 골라 주세요." };
@@ -38,7 +39,10 @@ function readForm(formData: FormData, userId: string) {
   const photoPattern = new RegExp(`^${userId}/[0-9a-f-]{36}\\.jpg$`);
   if (!photos.every((p) => photoPattern.test(p))) return { fields, error: "사진 정보가 이상해요. 다시 올려 주세요." };
 
-  return { fields, values: { title, category, price, description, status: status as ItemStatus, photos } };
+  return {
+    fields,
+    values: { title, category, price, description, status: status as ItemStatus, photos, accept_offers: acceptOffers },
+  };
 }
 
 // Storage에서 사진 파일을 지워요. (실패해도 글 작업은 이미 끝났으니 조용히 넘어가요)
@@ -63,10 +67,10 @@ export async function createItem(_prev: ItemFormState, formData: FormData): Prom
     .select("id")
     .single();
 
-  if (error) return { error: "글을 올리지 못했어요: " + error.message, fields: form.fields };
+  if (error) return { error: friendlyDbError(error.message), fields: form.fields };
 
   revalidatePath("/", "layout");
-  redirect(`/items/${data.id}`);
+  redirect(`/items/${data.id}?toast=created`);
 }
 
 // U: 판매글 고치기 (bind로 글 번호를 미리 넣어서 써요)
@@ -90,7 +94,7 @@ export async function updateItem(id: number, _prev: ItemFormState, formData: For
     .eq("seller_id", user.id)
     .select("id");
 
-  if (error) return { error: "글을 고치지 못했어요: " + error.message, fields: form.fields };
+  if (error) return { error: friendlyDbError(error.message), fields: form.fields };
   if (!data?.length) return { error: "내 글만 고칠 수 있어요.", fields: form.fields };
 
   // 이번에 뺀 사진은 저장 공간에서도 지워요.
@@ -98,7 +102,7 @@ export async function updateItem(id: number, _prev: ItemFormState, formData: For
   await removePhotos((before.photos as string[]).filter((p) => !kept.has(p)));
 
   revalidatePath("/", "layout");
-  redirect(`/items/${id}`);
+  redirect(`/items/${id}?toast=updated`);
 }
 
 // D: 판매글 지우기 (사진 파일도 함께 지워요)
@@ -118,5 +122,5 @@ export async function deleteItem(id: number) {
   await removePhotos(data.flatMap((row) => row.photos as string[]));
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/?toast=deleted");
 }

@@ -22,7 +22,7 @@ export async function getLikedItems(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("item_likes")
-    .select("created_at, item:items(*, seller:profiles!items_seller_id_fkey(nickname))")
+    .select("created_at, item:items(*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp))")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw new Error("관심목록을 불러오지 못했어요: " + error.message);
@@ -107,7 +107,7 @@ export type ItemComment = {
   author_id: string;
   body: string;
   created_at: string;
-  author: { nickname: string } | null;
+  author: { nickname: string; avatar: string } | null;
 };
 
 // 판매글의 댓글 (오래된 것부터). 댓글은 누구나 볼 수 있어요.
@@ -116,7 +116,7 @@ export async function getComments(itemId: number) {
   const { data, error } = await supabase
     .from("item_comments")
     // profiles와의 연결이 여러 개라 '댓글 쓴 사람' 연결을 콕 집어 줘요.
-    .select("*, author:profiles!item_comments_author_id_fkey(nickname)")
+    .select("*, author:profiles!item_comments_author_id_fkey(nickname, avatar)")
     .eq("item_id", itemId)
     .order("created_at", { ascending: true })
     .limit(200);

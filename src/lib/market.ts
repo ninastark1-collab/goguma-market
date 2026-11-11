@@ -46,8 +46,47 @@ export type Item = {
   photos: string[]; // Storage 안의 사진 경로 목록 (첫 번째가 대표 사진)
   like_count: number; // ♡ 좋아요 수 (DB 트리거가 자동으로 세요)
   chat_count: number; // 💬 이 글로 열린 채팅방 수
-  seller: { nickname: string } | null;
+  buyer_id: string | null; // 거래완료 때 고른 구매자
+  bumped_at: string; // 끌어올린 시각 (목록은 이 순서)
+  accept_offers: boolean; // 가격 제안 받기
+  seller: { nickname: string; avatar: string; manner_temp: number } | null;
 };
+
+// 프로필에 고를 수 있는 이모지 (구황작물·향토 느낌)
+export const AVATARS = ["🍠", "🥔", "🌽", "🌰", "🎃", "🥕", "🍄", "🌾", "🐿️", "🐓", "🐄", "🐝"];
+
+// 동네 이름 예시 (입력칸에서 골라 쓸 수 있게 보여 줘요. 직접 적어도 돼요)
+export const REGION_SUGGESTIONS = [
+  "여주시 여주동", "여주시 오학동", "여주시 중앙동", "여주시 가남읍", "여주시 점동면", "여주시 능서면",
+  "여주시 북내면", "여주시 강천면", "여주시 대신면", "여주시 금사면", "여주시 산북면", "여주시 흥천면",
+];
+
+// 고구마 온도에 어울리는 그림과 색 (당근의 매너온도처럼, 높을수록 따뜻해요)
+export function tempLook(temp: number) {
+  if (temp >= 50) return { emoji: "🔥", color: "#c4502f" };
+  if (temp >= 40) return { emoji: "🍠", color: "#f2a93b" };
+  if (temp >= 36.5) return { emoji: "🌱", color: "#5e7d3a" };
+  return { emoji: "🥶", color: "#5a7aa0" };
+}
+
+// 후기 평가 이름
+export const RATINGS = {
+  good: { label: "최고예요", emoji: "😍" },
+  soso: { label: "괜찮아요", emoji: "🙂" },
+  bad: { label: "별로예요", emoji: "😞" },
+} as const;
+export type Rating = keyof typeof RATINGS;
+
+// 신고 사유 (DB의 reason 칸에 들어가는 값과 같아요)
+export const REPORT_REASONS = ["사기 의심", "판매 금지 물품", "욕설·비방", "스팸·광고", "기타"] as const;
+
+// DB 오류 문장을 사용자에게 보여 줄 한국어로 바꿔요.
+export function friendlyDbError(message: string) {
+  if (message.includes("rate_limited")) return "너무 빨리 여러 번 보냈어요. 잠시 후 다시 시도해 주세요.";
+  if (message.includes("bump_too_soon")) return "끌어올리기는 하루에 한 번만 할 수 있어요.";
+  if (message.includes("row-level security")) return "권한이 없어요. 차단된 사이이거나 내 글이 아닐 수 있어요.";
+  return "문제가 생겼어요: " + message;
+}
 
 // 사진 설정: 저장 공간(버킷) 이름과 한 글에 올릴 수 있는 최대 장수
 export const PHOTO_BUCKET = "goguma-item-photos";

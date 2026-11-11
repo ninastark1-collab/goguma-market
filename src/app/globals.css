@@ -119,3 +119,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-steam, .animate-sway, .animate-twinkle { animation: none; }
 }
+
+/* 토스트 안내: 아래에서 톡 올라왔다가 스르르 사라져요 */
+@keyframes toast {
+  0% { opacity: 0; transform: translateY(12px); }
+  10%, 85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(6px); }
+}

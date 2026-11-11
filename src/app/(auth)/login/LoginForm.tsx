@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useActionState } from "react";
 import { login } from "@/app/auth/actions";
 import FormMessage from "@/components/FormMessage";
@@ -33,6 +35,9 @@ export default function LoginForm({ next, notice }: { next: string; notice?: str
       <button type="submit" className="btn-goguma mt-2 w-full" disabled={pending}>
         {pending ? "밭으로 가는 중…" : "로그인"}
       </button>
+      <Link href="/forgot" className="self-center text-xs text-soil-soft underline underline-offset-2 hover:text-skin">
+        비밀번호를 잊으셨나요?
+      </Link>
     </form>
   );
 }

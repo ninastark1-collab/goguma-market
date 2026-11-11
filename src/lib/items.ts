@@ -3,46 +3,79 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES, type Item } from "@/lib/market";
 
-// 판매자 닉네임을 profiles 테이블에서 함께 가져와 seller 라는 이름으로 붙여요.
-// !items_seller_id_fkey: 좋아요·채팅 표가 생겨서 items↔profiles 연결이 여러 개라, "판매자 연결"이라고 콕 집어 줘요.
-const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname)";
+// 판매자 닉네임·프로필 이모지·고구마 온도를 profiles 테이블에서 함께 가져와요.
+// !items_seller_id_fkey: items↔profiles 연결이 여러 개(판매자·구매자·좋아요·채팅·댓글…)라 "판매자 연결"이라고 콕 집어 줘요.
+export const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp)";
 
-// 목록: 최신순. category를 주면 그 카테고리만.
-export async function getItems({ category }: { category?: string } = {}) {
+export type ItemSort = "recent" | "popular" | "low" | "high";
+
+export type ItemQuery = {
+  category?: string;
+  region?: string; // 이 동네 글만
+  keyword?: string; // 제목 또는 카테고리 이름에 들어 있으면
+  minPrice?: number;
+  maxPrice?: number;
+  hideDone?: boolean; // 거래완료 숨기기
+  sort?: ItemSort;
+  limit?: number;
+  sellerId?: string; // 이 사람이 올린 글 (판매내역·판매자 페이지)
+  buyerId?: string; // 이 사람이 산 글 (구매내역)
+  hideBlocked?: string; // 이 사용자(나)가 차단한 사람의 글은 빼요
+};
+
+// 내가 차단한 사람 목록 (RLS 덕분에 내 차단 목록만 보여요)
+export async function getBlockedIds(userId: string | undefined) {
+  if (!userId) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.from("user_blocks").select("blocked_id").eq("blocker_id", userId);
+  return (data ?? []).map((r) => r.blocked_id as string);
+}
+
+// PostgREST의 or() 안에 넣는 값은 따옴표로 감싸고, 따옴표·역슬래시를 escape 해요. (쉼표·괄호가 들어 있어도 안전)
+function quoted(value: string) {
+  return `"${value.replace(/["\\]/g, (c) => "\\" + c)}"`;
+}
+
+// 목록 하나로 홈·카테고리·검색·판매내역 모두 처리해요. hasMore: 더 보기 버튼을 보일지
+export async function findItems(q: ItemQuery = {}) {
   // 요청이 들어온 뒤에만 실행(항상 최신 글을 보여 주기 위해)
   await connection();
   const supabase = await createClient();
+  const limit = Math.min(Math.max(q.limit ?? 30, 1), 300);
 
-  let query = supabase.from("items").select(ITEM_COLUMNS).order("created_at", { ascending: false }).limit(60);
-  if (category) query = query.eq("category", category);
+  let query = supabase.from("items").select(ITEM_COLUMNS);
+  if (q.category) query = query.eq("category", q.category);
+  if (q.region) query = query.eq("region", q.region);
+  if (q.sellerId) query = query.eq("seller_id", q.sellerId);
+  if (q.buyerId) query = query.eq("buyer_id", q.buyerId);
+  if (q.hideDone) query = query.neq("status", "거래완료");
+  if (q.minPrice != null) query = query.gte("price", q.minPrice);
+  if (q.maxPrice != null) query = query.lte("price", q.maxPrice);
 
-  const { data, error } = await query;
+  const keyword = q.keyword?.trim();
+  if (keyword) {
+    // ilike의 특수문자(%, _)를 글자 그대로 찾도록 앞에 \ 를 붙여요.
+    const pattern = `%${keyword.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+    const slugs = CATEGORIES.filter((c) => c.name.includes(keyword)).map((c) => c.slug);
+    query = query.or(
+      [`title.ilike.${quoted(pattern)}`, ...(slugs.length ? [`category.in.(${slugs.join(",")})`] : [])].join(","),
+    );
+  }
+
+  const blocked = await getBlockedIds(q.hideBlocked);
+  if (blocked.length) query = query.not("seller_id", "in", `(${blocked.join(",")})`);
+
+  // 정렬: 최신(끌어올린 시각 기준) / 인기(♡ 많은 순) / 낮은 가격 / 높은 가격
+  if (q.sort === "popular") query = query.order("like_count", { ascending: false }).order("bumped_at", { ascending: false });
+  else if (q.sort === "low") query = query.order("price", { ascending: true }).order("bumped_at", { ascending: false });
+  else if (q.sort === "high") query = query.order("price", { ascending: false }).order("bumped_at", { ascending: false });
+  else query = query.order("bumped_at", { ascending: false });
+
+  // 한 개 더 가져와 보면 '더 있는지' 알 수 있어요.
+  const { data, error } = await query.limit(limit + 1);
   if (error) throw new Error("판매글을 불러오지 못했어요: " + error.message);
-  return (data ?? []) as Item[];
-}
-
-// 검색: 제목에 검색어가 있거나, 카테고리 이름에 검색어가 있으면 보여 줘요.
-export async function searchItems(keyword: string) {
-  await connection();
-  const supabase = await createClient();
-
-  // ilike의 특수문자(%, _)를 글자 그대로 찾도록 앞에 \ 를 붙여요.
-  const pattern = `%${keyword.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
-  const slugs = CATEGORIES.filter((c) => c.name.includes(keyword)).map((c) => c.slug);
-
-  const [byTitle, byCategory] = await Promise.all([
-    supabase.from("items").select(ITEM_COLUMNS).ilike("title", pattern).order("created_at", { ascending: false }).limit(60),
-    slugs.length
-      ? supabase.from("items").select(ITEM_COLUMNS).in("category", slugs).order("created_at", { ascending: false }).limit(60)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  if (byTitle.error) throw new Error("검색하지 못했어요: " + byTitle.error.message);
-  if (byCategory.error) throw new Error("검색하지 못했어요: " + byCategory.error.message);
-
-  // 두 결과를 합치고, 겹친 글은 한 번만, 최신순으로 정렬해요.
-  const map = new Map<number, Item>();
-  for (const it of [...(byTitle.data ?? []), ...(byCategory.data ?? [])] as Item[]) map.set(it.id, it);
-  return [...map.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const rows = (data ?? []) as Item[];
+  return { items: rows.slice(0, limit), hasMore: rows.length > limit };
 }
 
 // 글 하나 (상세 화면, 수정 화면용). 없으면 null.

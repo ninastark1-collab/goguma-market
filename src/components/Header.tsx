@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import GogumaLogo from "@/components/GogumaLogo";
 import LogoutButton from "@/components/LogoutButton";
+import NavBadgeLinks from "@/components/NavBadgeLinks";
 import { NAV_ITEMS } from "@/components/nav";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -10,11 +11,12 @@ import { getCurrentUser } from "@/lib/auth";
 export default function Header() {
   return (
     <header className="sticky top-0 z-20 border-b-2 border-soil bg-hanji/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
-            <GogumaLogo size={40} />
-            <span className="font-display text-2xl text-skin">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-6">
+          {/* whitespace-nowrap: 좁은 휴대폰에서도 로고 글자가 두 줄로 꺾이지 않게 */}
+          <Link href="/" className="flex shrink-0 items-center gap-1.5 whitespace-nowrap sm:gap-2">
+            <GogumaLogo size={34} />
+            <span className="font-display text-xl text-skin sm:text-2xl">
               고구마<span className="text-soil">마켓</span>
             </span>
           </Link>
@@ -40,12 +42,13 @@ async function UserNav() {
   const user = await getCurrentUser();
 
   return (
-    <div className="flex items-center gap-2 text-sm sm:gap-3">
+    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm sm:gap-3">
       {user ? (
         <>
-          <span className="hidden rounded-full border-2 border-soil/30 px-3 py-1 text-xs text-soil-soft sm:inline">
+          <Link href="/my/edit" className="hidden rounded-full border-2 border-soil/30 px-3 py-1 text-xs text-soil-soft hover:border-skin sm:inline">
             📍 {user.region ?? "동네 미설정"}
-          </span>
+          </Link>
+          <NavBadgeLinks />
           <Link href="/write" className="btn-goguma hidden px-4! py-1.5! text-sm! md:inline-flex">
             + 내 물건 팔기
           </Link>
@@ -56,8 +59,8 @@ async function UserNav() {
         </>
       ) : (
         <>
-          <Link href="/login" className="font-display text-soil hover:text-skin">로그인</Link>
-          <Link href="/signup" className="btn-straw text-sm">회원가입</Link>
+          <Link href="/login" className="whitespace-nowrap font-display text-soil hover:text-skin">로그인</Link>
+          <Link href="/signup" className="btn-straw whitespace-nowrap px-3! py-1.5! text-sm">회원가입</Link>
         </>
       )}
     </div>
