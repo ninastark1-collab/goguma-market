@@ -1,5 +1,5 @@
 -- 고구마마켓 홍보용 샘플 판매글 (희귀한 물건들)
--- 판매자는 테스트 계정 '테스트고구마'예요. (이 계정이 없으면 아무것도 들어가지 않아요)
+-- 판매자는 테스트 계정 '고구마 장인'이에요. (이 계정이 없으면 아무것도 들어가지 않아요)
 -- created_at을 조금씩 다르게 줘서 목록에 "n분 전 / n시간 전"이 다양하게 보이게 했어요.
 -- 이 파일은 표 구조를 바꾸지 않는 '데이터'라서 migrations가 아니라 seed 폴더에 둬요.
 
@@ -39,4 +39,4 @@ cross join (values
     0, 'hobby', '여주시 가남읍', '판매중', interval '3 days'
   )
 ) as v(title, description, price, category, region, status, ago)
-where p.nickname = '테스트고구마';
+where p.nickname = '고구마 장인';
