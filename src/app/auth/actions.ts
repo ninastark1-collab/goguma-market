@@ -96,7 +96,8 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 
 export async function logout() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // scope: "local" → 이 기기에서만 로그아웃. 쿠키를 먼저 지우고 나서 서버에 알립니다.
+  await supabase.auth.signOut({ scope: "local" });
   revalidatePath("/", "layout");
   redirect("/");
 }

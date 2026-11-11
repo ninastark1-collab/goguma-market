@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 로그인해야만 들어갈 수 있는 경로
-const PROTECTED = ["/my"];
+const PROTECTED = ["/my", "/chat", "/write"];
 // 로그인한 사람은 들어갈 필요 없는 경로
 const GUEST_ONLY = ["/login", "/signup"];
 

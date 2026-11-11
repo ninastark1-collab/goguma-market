@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Gowun_Dodum, Jua } from "next/font/google";
 import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import "./globals.css";
 
 // 제목용: 동글동글한 Jua / 본문용: 단정한 고운돋움
@@ -18,9 +19,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
-        <footer className="border-t-2 border-dashed border-straw py-6 text-center text-sm text-soil-soft">
+        {/* 휴대폰에선 아래 고정 메뉴에 가리지 않도록 여백을 둡니다 */}
+        <footer className="border-t-2 border-dashed border-straw pb-24 pt-6 text-center text-sm text-soil-soft md:pb-6">
           🍠 고구마마켓 · 우리 동네 밭에서 캐낸 중고거래
         </footer>
+        <BottomNav />
       </body>
     </html>
   );
