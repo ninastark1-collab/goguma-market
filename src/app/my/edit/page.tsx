@@ -26,7 +26,7 @@ async function Forms() {
     <>
       <div className="card-sack mt-3 px-5 py-6 sm:px-8">
         <h1 className="mb-5 font-display text-3xl">내 정보 수정 🍠</h1>
-        <ProfileForm nickname={user.nickname} region={user.region} avatar={user.avatar} />
+        <ProfileForm nickname={user.nickname} region={user.region} avatar={user.avatar} showOnline={user.showOnline} />
       </div>
       <details className="stitch mt-8 bg-[#fffaf0]/70 px-5 py-4">
         <summary className="cursor-pointer text-sm text-soil-soft">회원 탈퇴</summary>

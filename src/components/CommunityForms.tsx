@@ -39,13 +39,23 @@ export function PostForm() {
   );
 }
 
-export function PostCommentForm({ postId }: { postId: number }) {
+export function PostCommentForm({ postId, parentId }: { postId: number; parentId?: number }) {
   const [state, action, pending] = useActionState(addPostComment.bind(null, postId), undefined);
   return (
     // key: 성공할 때마다 폼을 새로 그려서 입력칸을 비워요.
     <form key={state?.ok ?? "form"} action={action} className="flex flex-col gap-2">
+      {parentId && <input type="hidden" name="parentId" value={parentId} />}
       <div className="flex items-end gap-2">
-        <textarea name="body" rows={2} maxLength={500} required placeholder="따뜻한 댓글을 남겨 주세요" aria-label="댓글 입력" className="field min-h-16 flex-1 resize-y py-2.5" />
+        <textarea
+          name="body"
+          rows={parentId ? 1 : 2}
+          maxLength={500}
+          required
+          autoFocus={!!parentId}
+          placeholder={parentId ? "답글을 남겨 주세요" : "따뜻한 댓글을 남겨 주세요"}
+          aria-label={parentId ? "답글 입력" : "댓글 입력"}
+          className={`field flex-1 resize-y py-2.5 ${parentId ? "min-h-11" : "min-h-16"}`}
+        />
         <button type="submit" className="btn-goguma h-11 shrink-0 px-4! py-0! text-sm!" disabled={pending}>{pending ? "…" : "등록"}</button>
       </div>
       <FormMessage error={state?.error} />

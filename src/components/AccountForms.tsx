@@ -5,7 +5,7 @@ import FormMessage from "@/components/FormMessage";
 import { changePassword, deleteAccount, requestPasswordReset, updateProfile } from "@/app/my/actions";
 import { AVATARS, REGION_SUGGESTIONS } from "@/lib/market";
 
-export function ProfileForm({ nickname, region, avatar }: { nickname: string; region: string | null; avatar: string }) {
+export function ProfileForm({ nickname, region, avatar, showOnline }: { nickname: string; region: string | null; avatar: string; showOnline: boolean }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -36,6 +36,13 @@ export function ProfileForm({ nickname, region, avatar }: { nickname: string; re
           ))}
         </datalist>
         <span className="text-xs text-soil-soft">홈의 ‘📍 내 동네’ 탭과 새로 올리는 글에 이 동네가 쓰여요.</span>
+      </label>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="showOnline" defaultChecked={showOnline} className="mt-1 h-4 w-4 accent-[var(--color-skin)]" />
+        <span>
+          🟢 접속 상태 보여 주기
+          <span className="block text-xs text-soil-soft">끄면 ‘접속 중’ 표시와 마지막 접속 시각이 다른 사람에게 보이지 않아요.</span>
+        </span>
       </label>
       <FormMessage error={state?.error} />
       <button type="submit" className="btn-goguma" disabled={pending}>{pending ? "저장 중…" : "저장하기"}</button>

@@ -5,7 +5,7 @@ import { CATEGORIES, type Item } from "@/lib/market";
 
 // 판매자 닉네임·프로필 이모지·고구마 온도를 profiles 테이블에서 함께 가져와요.
 // !items_seller_id_fkey: items↔profiles 연결이 여러 개(판매자·구매자·좋아요·채팅·댓글…)라 "판매자 연결"이라고 콕 집어 줘요.
-export const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp, region_verified_at)";
+export const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp, region_verified_at, last_seen_at)";
 
 export type ItemSort = "recent" | "popular" | "low" | "high";
 
@@ -16,6 +16,7 @@ export type ItemQuery = {
   minPrice?: number;
   maxPrice?: number;
   hideDone?: boolean; // 거래완료 숨기기
+  condition?: string; // 상품 상태
   sort?: ItemSort;
   limit?: number;
   sellerId?: string; // 이 사람이 올린 글 (판매내역·판매자 페이지)
@@ -49,6 +50,7 @@ export async function findItems(q: ItemQuery = {}) {
   if (q.sellerId) query = query.eq("seller_id", q.sellerId);
   if (q.buyerId) query = query.eq("buyer_id", q.buyerId);
   if (q.hideDone) query = query.neq("status", "거래완료");
+  if (q.condition) query = query.eq("condition", q.condition);
   if (q.minPrice != null) query = query.gte("price", q.minPrice);
   if (q.maxPrice != null) query = query.lte("price", q.maxPrice);
 

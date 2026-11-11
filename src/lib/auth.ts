@@ -19,7 +19,7 @@ export const getCurrentUser = cache(async () => {
   const [{ data: profile }, { data: admin }] = await Promise.all([
     supabase
     .from("profiles")
-    .select("nickname, region, created_at, avatar, manner_temp, region_verified_at")
+    .select("nickname, region, created_at, avatar, manner_temp, region_verified_at, show_online")
     .eq("id", claims.sub)
     .maybeSingle(),
     // 운영자인지 (RLS 덕분에 '내 줄'만 보여요)
@@ -38,5 +38,6 @@ export const getCurrentUser = cache(async () => {
     temp: Number(profile?.manner_temp ?? 36.5),
     regionVerified: !!profile?.region_verified_at, // 위치로 동네 인증했는지
     isAdmin: !!admin, // 운영자(신고 처리)
+    showOnline: profile?.show_online ?? true, // 접속 상태 공개
   };
 });

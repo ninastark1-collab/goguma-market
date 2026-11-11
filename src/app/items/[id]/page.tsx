@@ -3,19 +3,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, TempBadge } from "@/components/Avatar";
-import CommentForm from "@/components/CommentForm";
+import CommentForm, { ReplyToggle } from "@/components/CommentForm";
 import DeleteCommentButton from "@/components/DeleteCommentButton";
 import DeleteItemButton from "@/components/DeleteItemButton";
 import LikeButton from "@/components/LikeButton";
 import PhotoGallery from "@/components/PhotoGallery";
 import { BlockButton, ReportButton } from "@/components/SafetyButtons";
 import { DetailSkeleton } from "@/components/Skeletons";
+import { OnlineStatus } from "@/components/Presence";
+import ItemList from "@/components/ItemList";
+import ViewTracker from "@/components/ViewTracker";
 import { BumpButton, ReviewForm } from "@/components/TradeForms";
 import { startChat } from "@/app/chat/actions";
 import { markSold } from "@/app/items/trade-actions";
 import { setItemHidden } from "@/app/admin/actions";
 import { getCurrentUser } from "@/lib/auth";
-import { getBlockedIds, getItem, getRequestTime } from "@/lib/items";
+import { findItems, getBlockedIds, getItem, getRequestTime } from "@/lib/items";
 import { formatPrice, getCategory, photoUrl, timeAgo } from "@/lib/market";
 import { getComments, hasLiked } from "@/lib/social";
 import { getChatPartnersForItem, getProfile, hasReviewed, isBlockedByMe } from "@/lib/trust";
@@ -67,7 +70,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
   const edited = item.updated_at !== item.created_at;
   const bumped = new Date(item.bumped_at).getTime() - new Date(item.created_at).getTime() > 60_000;
 
-  const [liked, comments, blockedIds, blockedSeller, partners, reviewed, buyer] = await Promise.all([
+  const [liked, comments, blockedIds, blockedSeller, partners, reviewed, buyer, sellerItems, similar] = await Promise.all([
     hasLiked(item.id, user?.id),
     getComments(item.id),
     getBlockedIds(user?.id),
@@ -75,7 +78,12 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
     isMine ? getChatPartnersForItem(item.id) : Promise.resolve([]),
     done && (isMine || isBuyer) ? hasReviewed(item.id, user?.id) : Promise.resolve(true),
     done && item.buyer_id && (isMine || isBuyer) ? getProfile(item.buyer_id) : Promise.resolve(null),
+    // 판매자의 다른 상품 / 비슷한 상품(같은 카테고리, 판매 중인 것)
+    findItems({ sellerId: item.seller_id, limit: 5 }),
+    findItems({ category: item.category, hideDone: true, limit: 5, hideBlocked: user?.id }),
   ]);
+  const moreFromSeller = sellerItems.items.filter((i) => i.id !== item.id).slice(0, 4);
+  const similarItems = similar.items.filter((i) => i.id !== item.id && i.seller_id !== item.seller_id).slice(0, 4);
   // 내가 차단한 사람의 댓글은 안 보여요.
   const visibleComments = comments.filter((c) => !blockedIds.includes(c.author_id));
   const back = `/items/${item.id}`;
@@ -112,6 +120,10 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
                 📍 {item.region ?? "동네 미설정"}
                 {item.seller?.region_verified_at && <span className="ml-1 text-leaf">✅ 동네 인증</span>}
               </span>
+              <OnlineStatus
+                userId={item.seller_id}
+                lastSeenText={item.seller?.last_seen_at ? timeAgo(item.seller.last_seen_at, now) : null}
+              />
             </span>
             {/* 좁은 칸이라 숫자형(compact)으로: 36.5℃ 🌱 */}
             <span className="flex shrink-0 flex-col items-end">
@@ -151,7 +163,14 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               {edited && " · 수정됨"}
             </p>
             <p className="mt-1 text-xs text-soil-soft">
-              ♡ 관심 {item.like_count} · 💬 채팅 {item.chat_count} · 댓글 {visibleComments.length}
+              ♡ 관심 {item.like_count} · 💬 채팅 {item.chat_count} · 댓글 {visibleComments.length} · 조회 {item.view_count}
+            </p>
+            {/* 상품 상태 · 거래 방법 */}
+            <p className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full border-2 border-soil/30 bg-[#fffaf0] px-2.5 py-0.5">🏷️ {item.condition}</span>
+              <span className="rounded-full border-2 border-soil/30 bg-[#fffaf0] px-2.5 py-0.5">
+                {item.trade_method === "택배" ? "📦" : item.trade_method === "직거래" ? "🤝" : "🤝📦"} {item.trade_method}
+              </span>
             </p>
             {item.accept_offers && !done && (
               <p className="mt-3 inline-block rounded-full border-2 border-flesh bg-flesh-soft px-3 py-0.5 text-xs">
@@ -244,6 +263,23 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
         </div>
       </article>
 
+      {/* 조회수·최근 본 상품 기록 (화면에는 아무것도 안 그려요) */}
+      <ViewTracker
+        item={{ id: item.id, title: item.title, price: item.price, category: item.category, photo: item.photos[0] ?? null }}
+        userId={user?.id}
+      />
+
+      {/* 판매자의 다른 상품 */}
+      {moreFromSeller.length > 0 && (
+        <section className="mt-8" aria-label="판매자의 다른 상품">
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="font-display text-xl">{item.seller?.nickname ?? "판매자"}님의 다른 상품</h2>
+            <Link href={`/users/${item.seller_id}`} className="text-sm text-soil-soft hover:text-skin">모두 보기 ›</Link>
+          </div>
+          <ItemList items={moreFromSeller} empty={null} />
+        </section>
+      )}
+
       {/* 댓글: 누구나 보고, 로그인한 사람만 써요 */}
       <section className="card-sack mt-6 px-5 py-5 sm:px-8" aria-label="댓글">
         <h2 className="font-display text-xl">
@@ -254,26 +290,44 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
           <p className="mt-3 text-sm text-soil-soft">아직 댓글이 없어요. 첫 댓글을 남겨 보세요 🌱</p>
         ) : (
           <ul className="mt-3 divide-y-2 divide-dashed divide-straw">
-            {visibleComments.map((c) => {
-              const bySeller = c.author_id === item.seller_id;
-              // 지우기: 댓글 쓴 사람이거나, 이 글의 판매자일 때
-              const canDelete = !!user && (user.id === c.author_id || isMine);
+            {/* 원댓글 → 그 아래에 답글(들여쓰기) */}
+            {visibleComments.filter((c) => !c.parent_id).map((c) => {
+              const replies = visibleComments.filter((r) => r.parent_id === c.id);
+              const row = (x: typeof c, isReply: boolean) => {
+                const bySeller = x.author_id === item.seller_id;
+                // 지우기: 댓글 쓴 사람이거나, 이 글의 판매자일 때
+                const canDelete = !!user && (user.id === x.author_id || isMine);
+                return (
+                  <div key={x.id} className={isReply ? "mt-3 ml-7 rounded-xl bg-hanji-deep/50 px-3 py-2" : ""}>
+                    {/* div: 안에 삭제 버튼(form)이 들어가서 <p>를 쓰면 안 돼요 (HTML 규칙) */}
+                    <div className="flex items-center gap-1.5 text-sm">
+                      {isReply && <span className="text-soil-soft">↳</span>}
+                      <Avatar emoji={x.author?.avatar} size={24} />
+                      <Link href={`/users/${x.author_id}`} className="font-display hover:text-skin">{x.author?.nickname ?? "알 수 없음"}</Link>
+                      {bySeller && <span className="rounded-md bg-skin px-1.5 py-0.5 text-[10px] text-white">판매자</span>}
+                      <span className="text-xs text-soil-soft">· {timeAgo(x.created_at, now)}</span>
+                      <span className="ml-auto flex items-center gap-3">
+                        {user && user.id !== x.author_id && (
+                          <ReportButton targetType="comment" targetId={x.id} back={back} label="신고" />
+                        )}
+                        {canDelete && <DeleteCommentButton commentId={x.id} itemId={item.id} />}
+                      </span>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap break-words pl-[30px] leading-relaxed">{x.body}</p>
+                  </div>
+                );
+              };
               return (
                 <li key={c.id} className="py-3">
-                  {/* div: 안에 삭제 버튼(form)이 들어가서 <p>를 쓰면 안 돼요 (HTML 규칙) */}
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <Avatar emoji={c.author?.avatar} size={24} />
-                    <Link href={`/users/${c.author_id}`} className="font-display hover:text-skin">{c.author?.nickname ?? "알 수 없음"}</Link>
-                    {bySeller && <span className="rounded-md bg-skin px-1.5 py-0.5 text-[10px] text-white">판매자</span>}
-                    <span className="text-xs text-soil-soft">· {timeAgo(c.created_at, now)}</span>
-                    <span className="ml-auto flex items-center gap-3">
-                      {user && user.id !== c.author_id && (
-                        <ReportButton targetType="comment" targetId={c.id} back={back} label="신고" />
-                      )}
-                      {canDelete && <DeleteCommentButton commentId={c.id} itemId={item.id} />}
-                    </span>
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap break-words pl-[30px] leading-relaxed">{c.body}</p>
+                  {row(c, false)}
+                  {replies.map((r) => row(r, true))}
+                  {user && (
+                    <div className="ml-7">
+                      <ReplyToggle>
+                        <CommentForm itemId={item.id} parentId={c.id} />
+                      </ReplyToggle>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -290,6 +344,14 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
           )}
         </div>
       </section>
+
+      {/* 비슷한 상품: 같은 카테고리에서 판매 중인 다른 사람의 물건 */}
+      {similarItems.length > 0 && (
+        <section className="mt-8" aria-label="비슷한 상품">
+          <h2 className="mb-3 font-display text-xl">이런 상품은 어때요? 🍠</h2>
+          <ItemList items={similarItems} empty={null} />
+        </section>
+      )}
     </>
   );
 }

@@ -7,6 +7,7 @@ import ItemList, { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems } from "@/lib/items";
 import { ItemGridSkeleton } from "@/components/Skeletons";
+import { RecentlyViewed } from "@/components/ViewTracker";
 
 const HOT_KEYWORDS = ["고구마", "김장", "패딩", "자전거", "유모차", "캠핑"];
 
@@ -51,6 +52,9 @@ export default function Home({ searchParams }: PageProps<"/">) {
           <GogumaLogo size={130} steaming />
         </div>
       </section>
+
+      {/* 최근 본 상품 (이 브라우저에 저장된 목록) */}
+      <RecentlyViewed />
 
       {/* 카테고리 */}
       <section className="mt-10">

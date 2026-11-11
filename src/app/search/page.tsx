@@ -6,7 +6,7 @@ import ItemList, { EmptyBox } from "@/components/ItemList";
 import { ItemGridSkeleton } from "@/components/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems, type ItemSort } from "@/lib/items";
-import { CATEGORIES } from "@/lib/market";
+import { CATEGORIES, CONDITIONS } from "@/lib/market";
 
 export const metadata: Metadata = { title: "검색 · 고구마마켓" };
 
@@ -42,14 +42,15 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
   const minPrice = num(sp.min);
   const maxPrice = num(sp.max);
   const hideDone = str("done") === "hide";
+  const condition = (CONDITIONS as readonly string[]).includes(str("cond")) ? str("cond") : "";
   const sort = (SORTS.some((s) => s.value === str("sort")) ? str("sort") : "recent") as ItemSort;
   const limit = Math.min(Number(str("n")) || PAGE, 300);
   // 검색어가 없어도 조건을 하나라도 고르면 결과를 보여 줘요.
-  const hasCondition = !!(query || category || minPrice != null || maxPrice != null || hideDone || str("sort"));
+  const hasCondition = !!(query || category || minPrice != null || maxPrice != null || hideDone || condition || str("sort"));
 
   const user = await getCurrentUser();
   const { items, hasMore } = hasCondition
-    ? await findItems({ keyword: query, category, minPrice, maxPrice, hideDone, sort, limit, hideBlocked: user?.id })
+    ? await findItems({ keyword: query, category, minPrice, maxPrice, hideDone, condition, sort, limit, hideBlocked: user?.id })
     : { items: [], hasMore: false };
 
   // '더 보기'는 지금 조건 그대로 개수만 늘려요.
@@ -91,6 +92,15 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
             </select>
           </label>
         </div>
+        <label className="flex flex-col gap-1 text-sm">
+          상품 상태
+          <select name="cond" defaultValue={condition} className="field py-2!">
+            <option value="">전체</option>
+            {CONDITIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="done" value="hide" defaultChecked={hideDone} className="h-4 w-4 accent-[var(--color-skin)]" />
           거래완료 숨기기

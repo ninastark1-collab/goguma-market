@@ -30,6 +30,10 @@ function describe(n: Notification) {
       return { text: `키워드 ‘${n.body}’이(가) 들어간 새 물건이 올라왔어요 🏷️ ${title}`, sub: "", href: `/items/${n.item_id}` };
     case "report":
       return { text: `내가 한 신고가 처리됐어요: ${n.body}`, sub: "", href: "/my" };
+    case "reply":
+      return { text: `${who}님이 내 댓글에 답글을 남겼어요 ↳`, sub: n.body, href: n.item_id ? `/items/${n.item_id}` : `/community/${n.post_id}` };
+    case "price_drop":
+      return { text: `관심 상품 ${title}의 가격이 내려갔어요 📉`, sub: n.body, href: `/items/${n.item_id}` };
     case "post_comment":
       return { text: `${who}님이 내 동네생활 글에 댓글을 남겼어요`, sub: n.body, href: `/community/${n.post_id}` };
   }

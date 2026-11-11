@@ -25,7 +25,7 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ nickname, region: region || null, avatar })
+    .update({ nickname, region: region || null, avatar, show_online: formData.get("showOnline") === "on" })
     .eq("id", user.id);
   if (error) return { error: "저장하지 못했어요: " + error.message };
 

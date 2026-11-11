@@ -204,6 +204,14 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
                   <span className="rounded-full bg-hanji-deep px-3 py-1">{day}</span>
                 </p>
               )}
+              {/* 거래 약속 진행 안내(자동 메시지)는 가운데에 작게 */}
+              {m.kind === "system" ? (
+                <p className="my-2 text-center text-xs">
+                  <span className="inline-block rounded-2xl border-2 border-dashed border-straw bg-[#fffaf0] px-3 py-1.5 leading-relaxed">
+                    {m.body}
+                  </span>
+                </p>
+              ) : (
               <div className={`flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
                 {m.image_path ? (
                   <a
@@ -238,6 +246,7 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
                   {timeFmt.format(new Date(m.created_at))}
                 </span>
               </div>
+              )}
             </div>
           );
         })}

@@ -51,8 +51,12 @@ export async function addPostComment(postId: number, _prev: PostState, formData:
   if (!body) return { error: "댓글 내용을 적어 주세요." };
   if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요." };
 
+  // 답글이면 원댓글 번호가 같이 와요.
+  const parentRaw = String(formData.get("parentId") ?? "");
+  const parent_id = /^\d+$/.test(parentRaw) ? Number(parentRaw) : null;
+
   const supabase = await createClient();
-  const { error } = await supabase.from("community_comments").insert({ post_id: postId, author_id: user.id, body });
+  const { error } = await supabase.from("community_comments").insert({ post_id: postId, author_id: user.id, body, parent_id });
   if (error) return { error: friendlyDbError(error.message) };
 
   revalidatePath(`/community/${postId}`);

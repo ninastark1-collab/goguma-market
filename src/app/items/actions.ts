@@ -8,7 +8,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { friendlyDbError, getCategory, MAX_PHOTOS, PHOTO_BUCKET, STATUSES, type ItemStatus } from "@/lib/market";
+import {
+  CONDITIONS, friendlyDbError, getCategory, MAX_PHOTOS, PHOTO_BUCKET, STATUSES, TRADE_METHODS,
+  type ItemCondition, type ItemStatus, type TradeMethod,
+} from "@/lib/market";
 
 export type ItemFormState = {
   error?: string;
@@ -25,7 +28,12 @@ function readForm(formData: FormData, userId: string) {
   const status = String(formData.get("status") ?? "판매중");
   const photos = formData.getAll("photos").map(String);
   const acceptOffers = formData.get("acceptOffers") === "on"; // 가격 제안 받기 체크
-  const fields = { title, category, price: priceText, description, status, acceptOffers: formData.get("acceptOffers") === "on" ? "on" : "" };
+  const condition = String(formData.get("condition") ?? "사용감 있음");
+  const tradeMethod = String(formData.get("tradeMethod") ?? "직거래");
+  const fields = {
+    title, category, price: priceText, description, status, condition, tradeMethod,
+    acceptOffers: formData.get("acceptOffers") === "on" ? "on" : "",
+  };
 
   if (title.length < 2 || title.length > 40) return { fields, error: "제목은 2~40자로 적어 주세요." };
   if (!getCategory(category)) return { fields, error: "카테고리를 골라 주세요." };
@@ -34,6 +42,8 @@ function readForm(formData: FormData, userId: string) {
   if (price > 100_000_000) return { fields, error: "가격은 1억 원까지 적을 수 있어요." };
   if (description.length > 2000) return { fields, error: "설명은 2000자까지 적을 수 있어요." };
   if (!STATUSES.includes(status as ItemStatus)) return { fields, error: "판매 상태를 다시 골라 주세요." };
+  if (!CONDITIONS.includes(condition as ItemCondition)) return { fields, error: "상품 상태를 골라 주세요." };
+  if (!TRADE_METHODS.includes(tradeMethod as TradeMethod)) return { fields, error: "거래 방법을 골라 주세요." };
   if (photos.length > MAX_PHOTOS) return { fields, error: `사진은 ${MAX_PHOTOS}장까지 올릴 수 있어요.` };
   // 사진 경로는 "내아이디/무작위이름.jpg" 모양이어야 해요. (남의 사진을 끌어다 쓰지 못하게)
   const photoPattern = new RegExp(`^${userId}/[0-9a-f-]{36}\\.jpg$`);
@@ -41,7 +51,10 @@ function readForm(formData: FormData, userId: string) {
 
   return {
     fields,
-    values: { title, category, price, description, status: status as ItemStatus, photos, accept_offers: acceptOffers },
+    values: {
+      title, category, price, description, status: status as ItemStatus, photos, accept_offers: acceptOffers,
+      condition: condition as ItemCondition, trade_method: tradeMethod as TradeMethod,
+    },
   };
 }
 

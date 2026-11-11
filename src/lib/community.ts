@@ -21,6 +21,7 @@ export type Post = {
 export type PostComment = {
   id: number;
   post_id: number;
+  parent_id: number | null; // 답글이면 원댓글 번호
   author_id: string;
   body: string;
   created_at: string;

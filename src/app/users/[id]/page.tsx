@@ -6,6 +6,7 @@ import { Avatar, TempBadge } from "@/components/Avatar";
 import ItemList, { EmptyBox } from "@/components/ItemList";
 import { BlockButton, ReportButton } from "@/components/SafetyButtons";
 import { DetailSkeleton } from "@/components/Skeletons";
+import { OnlineStatus } from "@/components/Presence";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems, getRequestTime } from "@/lib/items";
 import { RATINGS, timeAgo, type Rating } from "@/lib/market";
@@ -57,6 +58,7 @@ async function UserProfile({ params }: { params: PageProps<"/users/[id]">["param
               📍 {profile.region ?? "동네 미설정"}
               {profile.region_verified_at && <span className="ml-1 text-leaf">✅ 동네 인증</span>} · {joined} 가입
             </p>
+            <OnlineStatus userId={profile.id} lastSeenText={profile.last_seen_at ? timeAgo(profile.last_seen_at, now) : null} />
           </div>
         </div>
         <div className="mt-5">

@@ -10,6 +10,7 @@ export type Profile = {
   avatar: string;
   manner_temp: number;
   region_verified_at: string | null;
+  last_seen_at: string | null; // 마지막 접속 (접속 상태를 숨긴 사람은 비어 있어요)
   created_at: string;
 };
 
@@ -20,7 +21,7 @@ export async function getProfile(userId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, nickname, region, avatar, manner_temp, region_verified_at, created_at")
+    .select("id, nickname, region, avatar, manner_temp, region_verified_at, last_seen_at, created_at")
     .eq("id", userId)
     .maybeSingle();
   return data ? ({ ...data, manner_temp: Number(data.manner_temp) } as Profile) : null;
@@ -66,7 +67,7 @@ export async function hasReviewed(itemId: number, userId: string | undefined) {
 
 export type Notification = {
   id: number;
-  type: "comment" | "like" | "review" | "sold" | "post_comment" | "keyword" | "report";
+  type: "comment" | "like" | "review" | "sold" | "post_comment" | "keyword" | "report" | "reply" | "price_drop";
   body: string;
   read_at: string | null;
   created_at: string;

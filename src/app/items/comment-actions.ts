@@ -20,8 +20,12 @@ export async function addComment(itemId: number, _prev: CommentState, formData: 
   if (!body) return { error: "댓글 내용을 적어 주세요." };
   if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요." };
 
+  // 답글이면 원댓글 번호가 같이 와요. (답글에 답글은 DB 규칙이 막아요)
+  const parentRaw = String(formData.get("parentId") ?? "");
+  const parent_id = /^\d+$/.test(parentRaw) ? Number(parentRaw) : null;
+
   const supabase = await createClient();
-  const { error } = await supabase.from("item_comments").insert({ item_id: itemId, author_id: user.id, body });
+  const { error } = await supabase.from("item_comments").insert({ item_id: itemId, author_id: user.id, body, parent_id });
   if (error) return { error: friendlyDbError(error.message) };
 
   revalidatePath(`/items/${itemId}`);

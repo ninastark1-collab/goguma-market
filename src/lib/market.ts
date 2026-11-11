@@ -27,6 +27,12 @@ export function getCategory(slug: string) {
   return CATEGORIES.find((c) => c.slug === slug);
 }
 
+// 상품 상태·거래 방법 (DB의 check 규칙과 같은 값)
+export const CONDITIONS = ["새상품", "거의 새것", "사용감 있음", "고장·부품용"] as const;
+export type ItemCondition = (typeof CONDITIONS)[number];
+export const TRADE_METHODS = ["직거래", "택배", "직거래·택배"] as const;
+export type TradeMethod = (typeof TRADE_METHODS)[number];
+
 // 판매 상태 (DB의 status 칸에 들어가는 값과 같아요)
 export const STATUSES = ["판매중", "예약중", "거래완료"] as const;
 export type ItemStatus = (typeof STATUSES)[number];
@@ -50,7 +56,10 @@ export type Item = {
   bumped_at: string; // 끌어올린 시각 (목록은 이 순서)
   accept_offers: boolean; // 가격 제안 받기
   is_hidden: boolean; // 운영자가 숨긴 글 (판매자·운영자만 보여요)
-  seller: { nickname: string; avatar: string; manner_temp: number; region_verified_at?: string | null } | null;
+  condition: ItemCondition; // 상품 상태
+  trade_method: TradeMethod; // 거래 방법
+  view_count: number; // 조회수 (하루에 한 사람당 1번)
+  seller: { nickname: string; avatar: string; manner_temp: number; region_verified_at?: string | null; last_seen_at?: string | null } | null;
 };
 
 // 프로필에 고를 수 있는 이모지 (구황작물·향토 느낌)
@@ -85,6 +94,10 @@ export const REPORT_REASONS = ["사기 의심", "판매 금지 물품", "욕설�
 export function friendlyDbError(message: string) {
   if (message.includes("rate_limited")) return "너무 빨리 여러 번 보냈어요. 잠시 후 다시 시도해 주세요.";
   if (message.includes("bump_too_soon")) return "끌어올리기는 하루에 한 번만 할 수 있어요.";
+  if (message.includes("bad_parent")) return "답글을 달 수 없는 댓글이에요. (답글에는 답글을 달 수 없어요)";
+  if (message.includes("item_not_available")) return "이미 다른 분과 약속이 잡혔거나 판매가 끝난 물건이에요.";
+  if (message.includes("bad_deal_step")) return "지금 단계에서는 할 수 없는 동작이에요. 화면을 새로 고쳐 주세요.";
+  if (message.includes("deals_one_open_per_room")) return "이 대화방에는 이미 진행 중인 거래 약속이 있어요.";
   if (message.includes("row-level security")) return "권한이 없어요. 차단된 사이이거나 내 글이 아닐 수 있어요.";
   return "문제가 생겼어요: " + message;
 }

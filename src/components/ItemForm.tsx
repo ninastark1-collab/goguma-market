@@ -6,7 +6,7 @@ import { startTransition, useActionState, useState } from "react";
 import FormMessage from "@/components/FormMessage";
 import PhotoPicker, { type PickedPhoto } from "@/components/PhotoPicker";
 import { uploadPhoto } from "@/lib/photos";
-import { CATEGORIES, photoUrl, STATUSES, type Item } from "@/lib/market";
+import { CATEGORIES, CONDITIONS, photoUrl, STATUSES, TRADE_METHODS, type Item } from "@/lib/market";
 import type { ItemFormState } from "@/app/items/actions";
 
 type Props = {
@@ -23,6 +23,8 @@ export default function ItemForm({ action, item }: Props) {
     price: item ? String(item.price) : "",
     description: item?.description ?? "",
     status: item?.status ?? "판매중",
+    condition: item?.condition ?? "사용감 있음",
+    tradeMethod: item?.trade_method ?? "직거래",
   };
 
   // 사진 목록: 고치기 화면이면 이미 올라간 사진부터 채워 둬요.
@@ -76,6 +78,31 @@ export default function ItemForm({ action, item }: Props) {
           ))}
         </select>
       </label>
+
+      {/* 상품 상태 · 거래 방법: 실제 중고거래에서 가장 많이 묻는 두 가지 */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5">
+          <span className="font-display">상품 상태</span>
+          <select className="field" name="condition" defaultValue={v.condition}>
+            {CONDITIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 font-display">거래 방법</legend>
+          <div className="flex gap-2">
+            {TRADE_METHODS.map((m) => (
+              <label key={m} className="flex-1">
+                <input type="radio" name="tradeMethod" value={m} defaultChecked={v.tradeMethod === m} className="peer sr-only" />
+                <span className="block cursor-pointer rounded-xl border-2 border-soil/40 bg-[#fffaf0] py-2 text-center text-xs peer-checked:border-soil peer-checked:bg-skin peer-checked:text-white peer-focus-visible:ring-4 peer-focus-visible:ring-flesh/40">
+                  {m}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
 
       <label className="flex flex-col gap-1.5">
         <span className="font-display">가격</span>

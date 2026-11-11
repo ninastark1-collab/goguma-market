@@ -3,6 +3,7 @@ import Link from "next/link";
 import GogumaLogo from "@/components/GogumaLogo";
 import LogoutButton from "@/components/LogoutButton";
 import NavBadgeLinks from "@/components/NavBadgeLinks";
+import { OnlineCount } from "@/components/Presence";
 import { NAV_ITEMS } from "@/components/nav";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -28,6 +29,7 @@ export default function Header() {
               </Link>
             ))}
           </nav>
+          <OnlineCount />
         </div>
 
         <Suspense fallback={<span className="h-9 w-32 animate-pulse rounded-full bg-hanji-deep" />}>

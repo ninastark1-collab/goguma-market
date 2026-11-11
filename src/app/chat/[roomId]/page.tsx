@@ -4,10 +4,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, TempBadge } from "@/components/Avatar";
 import ChatRoomView from "@/components/ChatRoomView";
+import DealPanel from "@/components/DealPanel";
 import ItemThumb from "@/components/ItemThumb";
 import { BlockButton, ReportButton } from "@/components/SafetyButtons";
+import { OnlineStatus } from "@/components/Presence";
+import { getRequestTime } from "@/lib/items";
+import { timeAgo } from "@/lib/market";
 import { leaveChatRoom } from "@/app/chat/actions";
-import { markSold } from "@/app/items/trade-actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getChatRoom } from "@/lib/social";
 import { isBlockedByMe } from "@/lib/trust";
@@ -40,7 +43,7 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
   const otherId = iAmSeller ? room.buyer_id : room.seller_id;
   const other = iAmSeller ? room.buyer : room.seller;
   const otherName = other?.nickname ?? "알 수 없음";
-  const blocked = await isBlockedByMe(user.id, otherId);
+  const [blocked, now] = await Promise.all([isBlockedByMe(user.id, otherId), getRequestTime()]);
   const item = room.item;
   const back = `/chat/${room.id}`;
 
@@ -55,6 +58,7 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
             <span className="truncate font-display text-lg">{otherName}</span>
           </Link>
           <span className="text-xs text-soil-soft">{iAmSeller ? "구매 문의" : "판매자"}</span>
+          <OnlineStatus userId={otherId} lastSeenText={other?.last_seen_at ? timeAgo(other.last_seen_at, now) : null} />
           <span className="ml-auto">
             <TempBadge temp={Number(other?.manner_temp ?? 36.5)} compact />
           </span>
@@ -82,18 +86,26 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
                 <span className="font-display">{formatPrice(item.price)}</span>
               </span>
             </Link>
-            {/* 판매자: 이 분과 거래가 끝났으면 바로 거래완료 (구매자로 지정) */}
-            {iAmSeller && item.status !== "거래완료" && !blocked && (
-              <form action={markSold.bind(null, item.id, room.buyer_id, `/items/${item.id}`)}>
-                <button type="submit" className="btn-straw shrink-0 px-3! py-1.5! text-xs">🤝 이 분과 거래완료</button>
-              </form>
-            )}
             {item.status === "거래완료" && item.buyer_id && (iAmSeller || item.buyer_id === user.id) && (
               <Link href={`/items/${item.id}`} className="btn-straw shrink-0 px-3! py-1.5! text-xs">💌 후기 남기기</Link>
             )}
           </div>
         ) : (
           <p className="px-4 py-2.5 text-sm text-soil-soft">삭제된 판매글이에요.</p>
+        )}
+        {/* 거래 약속: 가격 협의 → 구매확정(수락) → 예약중 → 거래완료 */}
+        {item && (
+          <DealPanel
+            roomId={room.id}
+            itemId={item.id}
+            sellerId={room.seller_id}
+            buyerId={room.buyer_id}
+            myId={user.id}
+            itemPrice={item.price}
+            itemStatus={item.status}
+            otherName={otherName}
+            blocked={blocked}
+          />
         )}
       </div>
 

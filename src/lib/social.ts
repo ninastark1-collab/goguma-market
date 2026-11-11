@@ -37,6 +37,7 @@ export type ChatMessage = {
   sender_id: string;
   body: string;
   image_path: string | null; // 채팅 사진 (비공개 버킷 안의 경로)
+  kind: "text" | "system"; // system: 거래 약속 진행 안내 (자동)
   read_at: string | null;
   created_at: string;
 };
@@ -52,14 +53,14 @@ export type ChatRoom = {
   buyer_left_at: string | null;
   created_at: string;
   item: Pick<Item, "id" | "title" | "price" | "status" | "category" | "photos" | "accept_offers" | "buyer_id"> | null;
-  seller: { nickname: string; avatar: string; manner_temp: number } | null;
-  buyer: { nickname: string; avatar: string; manner_temp: number } | null;
+  seller: { nickname: string; avatar: string; manner_temp: number; last_seen_at: string | null } | null;
+  buyer: { nickname: string; avatar: string; manner_temp: number; last_seen_at: string | null } | null;
 };
 
 // 채팅방 + 판매글 요약 + 두 사람 닉네임
 // (profiles를 두 번 가리켜서, 어느 연결인지 이름(…_fkey)으로 짚어 줘요)
 const ROOM_COLUMNS =
-  "*, item:items(id, title, price, status, category, photos, accept_offers, buyer_id), seller:profiles!chat_rooms_seller_id_fkey(nickname, avatar, manner_temp), buyer:profiles!chat_rooms_buyer_id_fkey(nickname, avatar, manner_temp)";
+  "*, item:items!chat_rooms_item_id_fkey(id, title, price, status, category, photos, accept_offers, buyer_id), seller:profiles!chat_rooms_seller_id_fkey(nickname, avatar, manner_temp, last_seen_at), buyer:profiles!chat_rooms_buyer_id_fkey(nickname, avatar, manner_temp, last_seen_at)";
 
 // 내 채팅 목록 (최근 대화 순) + 방마다 안 읽은 메시지 수
 export async function getMyChatRooms(userId: string) {
@@ -119,6 +120,7 @@ export async function getChatRoom(roomId: string) {
 export type ItemComment = {
   id: number;
   item_id: number;
+  parent_id: number | null; // 답글이면 원댓글 번호
   author_id: string;
   body: string;
   created_at: string;
