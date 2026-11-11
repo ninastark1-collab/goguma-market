@@ -94,6 +94,15 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 ### 개발 팁
 - 판매자·구매자를 동시에 시험하려면 `localhost:3000`(한 계정)과 `127.0.0.1:3000`(다른 계정)을 따로 열어요. (`next.config.ts`의 `allowedDevOrigins`)
 
+## 5단계: 판매글 댓글 ✅
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `supabase/migrations/005_goguma_item_comments.sql` | `item_comments` 테이블 + RLS (누구나 읽기 / 로그인한 본인만 쓰기 / 쓴 사람·판매자만 지우기) |
+| `src/app/items/comment-actions.ts` | `addComment`, `deleteComment` Server Actions |
+| `src/components/CommentForm.tsx`, `DeleteCommentButton.tsx` | 댓글 입력칸 / 삭제 버튼 |
+| `src/app/items/[id]/page.tsx` | 상세 화면 아래 댓글 목록 (판매자 댓글엔 '판매자' 표시) |
+
 ## 디자인 테마 — 구황작물 / 향토
 한지 배경, 흙색 글자, 고구마 껍질 자주색 버튼, 군고구마 속살 노란색 강조.
 색상과 버튼 스타일은 `src/app/globals.css` 의 `@theme` 과 `@utility` 에 모여 있습니다.
@@ -102,4 +111,5 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 - [x] 판매글 올리기 / 목록 / 상세 / 수정 / 삭제 (사진 제외)
 - [x] 판매글 사진 업로드 (Supabase Storage, 최대 10장)
 - [x] 좋아요(관심목록), 판매자·구매자 1:1 채팅
+- [x] 판매글 댓글
 - [ ] 배포 (가계부와 다른 주소로)
