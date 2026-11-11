@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [new URL("https://gfcylhusujdvzsoinwoj.supabase.co/storage/v1/object/public/goguma-item-photos/**")],
   },
+  // 개발 중(npm run dev)에만 쓰는 설정: 127.0.0.1 주소로도 미리보기를 열 수 있게 허락해요.
+  // (localhost와 127.0.0.1은 로그인 쿠키가 따로라서, 판매자·구매자 두 계정으로 채팅을 동시에 시험할 때 써요)
+  allowedDevOrigins: ["127.0.0.1"],
   turbopack: {
     rules: {
       "*.css": {

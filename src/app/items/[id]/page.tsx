@@ -3,9 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DeleteItemButton from "@/components/DeleteItemButton";
+import LikeButton from "@/components/LikeButton";
 import PhotoGallery from "@/components/PhotoGallery";
+import { startChat } from "@/app/chat/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getItem, getRequestTime } from "@/lib/items";
+import { hasLiked } from "@/lib/social";
 import { formatPrice, getCategory, photoUrl, timeAgo } from "@/lib/market";
 
 export const metadata: Metadata = { title: "판매글 · 고구마마켓" };
@@ -31,6 +34,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
   const isMine = user?.id === item.seller_id;
   const done = item.status === "거래완료";
   const edited = item.updated_at !== item.created_at;
+  const liked = await hasLiked(item.id, user?.id);
 
   return (
     <article className="card-sack mt-3 overflow-hidden">
@@ -67,6 +71,9 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
           {timeAgo(item.created_at, now)}
           {edited && " · 수정됨"}
         </p>
+        <p className="mt-1 text-xs text-soil-soft">
+          ♡ 관심 {item.like_count} · 💬 채팅 {item.chat_count}
+        </p>
         <p className="mt-4 font-display text-2xl text-skin">{formatPrice(item.price)}</p>
         <p className="mt-5 whitespace-pre-wrap leading-relaxed">
           {item.description || <span className="text-soil-soft">설명이 없어요.</span>}
@@ -80,6 +87,25 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
             </Link>
             <DeleteItemButton id={item.id} />
           </div>
+        )}
+      </div>
+
+      {/* 아래 거래 막대: ♡ 좋아요 | 가격 | 채팅하기 */}
+      <div className="flex items-center gap-3 border-t-2 border-soil bg-hanji-deep/60 px-5 py-3 sm:px-8">
+        <LikeButton itemId={item.id} liked={liked} count={item.like_count} loggedIn={!!user} disabled={isMine} />
+        <span className="h-10 w-0.5 bg-straw" />
+        <span className="min-w-0 flex-1 truncate font-display text-lg">{formatPrice(item.price)}</span>
+        {isMine ? (
+          <Link href="/chat" className="btn-straw shrink-0 text-sm">
+            💬 대화 중인 채팅 {item.chat_count}
+          </Link>
+        ) : (
+          // bind: 어떤 글로 채팅할지(id)를 미리 넣은 액션. 로그인 안 했으면 로그인 화면으로 가요.
+          <form action={startChat.bind(null, item.id)}>
+            <button type="submit" className="btn-goguma shrink-0 px-5! py-2.5! text-sm!" disabled={done}>
+              {done ? "거래완료" : "채팅하기"}
+            </button>
+          </form>
         )}
       </div>
     </article>

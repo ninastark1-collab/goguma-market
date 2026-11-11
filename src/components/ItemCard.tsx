@@ -52,6 +52,13 @@ export default function ItemCard({ item, now }: { item: Item; now: number }) {
             )}
             {formatPrice(item.price)}
           </p>
+          {/* 💬 채팅 수 · ♡ 좋아요 수 (0이면 숨겨요) */}
+          {(item.chat_count > 0 || item.like_count > 0) && (
+            <p className="mt-1 flex gap-3 text-xs text-soil-soft sm:justify-end">
+              {item.chat_count > 0 && <span>💬 {item.chat_count}</span>}
+              {item.like_count > 0 && <span>♡ {item.like_count}</span>}
+            </p>
+          )}
         </div>
       </Link>
     </li>

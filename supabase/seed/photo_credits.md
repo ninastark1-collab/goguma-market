@@ -19,5 +19,8 @@ CC BY 계열은 작가 표시가 필요해서, 사이트 맨 아래 '사진 출�
 | 14 | 1960년대 손으로 그린 우리 고장 옛 지도 원본 | [Daedongyeojido (Gyujanggak) 06-04](https://commons.wikimedia.org/wiki/File:Daedongyeojido_(Gyujanggak)_06-04.jpg) | 김정호 (대동여지도) | Public domain |
 | 15 | 1988 올림픽 성화 봉송 주자 운동복 + 참가 기념패 | [Seoul 1988 Torch](https://commons.wikimedia.org/wiki/File:Seoul_1988_Torch.JPG) | IVF | Public domain |
 | 16 | 2027년 8월 이집트 개기일식 관측 투어 동행권 1인 | [2024 Total Solar Eclipse Corona](https://commons.wikimedia.org/wiki/File:2024_Total_Solar_Eclipse_Corona.jpg) | Brucewaters | CC BY 4.0 |
+| 4 | 사과 10kg 한박스 (판매자: 고구마대장) | [Apples in boxes](https://commons.wikimedia.org/wiki/File:Apples_in_boxes.jpg) | - | CC0 |
+| 5 | 엔비디아 H100 GPU (판매자: 고구마대장) | [NVIDIA H100 (极客湾Geekerwan) 011](https://commons.wikimedia.org/wiki/File:NVIDIA_H100_(极客湾Geekerwan)_011.png) | 极客湾 Geekerwan | CC BY 3.0 |
+| 19 | 꿀고구마 10kg (판매자: 꿀고구마) | [Sweet Potatos](https://commons.wikimedia.org/wiki/File:Sweet_Potatos.jpg) | - | CC0 |
 
-사진 파일은 앱의 '고치기' 화면으로 올렸어요. (브라우저에서 1600px JPG로 줄여서 Storage `goguma-item-photos/{판매자id}/` 에 저장)
+사진 파일은 앱의 '고치기' 화면으로 올렸어요. 4·5·19번은 다른 계정의 글이라, 임시 저장 규칙을 잠깐 열어 원래 주인 폴더에 올린 뒤 규칙을 바로 지웠어요. (브라우저에서 1600px JPG로 줄여서 Storage `goguma-item-photos/{판매자id}/` 에 저장)

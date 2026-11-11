@@ -44,6 +44,8 @@ export type Item = {
   created_at: string;
   updated_at: string;
   photos: string[]; // Storage 안의 사진 경로 목록 (첫 번째가 대표 사진)
+  like_count: number; // ♡ 좋아요 수 (DB 트리거가 자동으로 세요)
+  chat_count: number; // 💬 이 글로 열린 채팅방 수
   seller: { nickname: string } | null;
 };
 

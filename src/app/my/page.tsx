@@ -8,11 +8,12 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "나의 고구마 · 고구마마켓" };
 
-const MY_MENUS = [
+// href가 있는 메뉴만 들어갈 수 있고, 나머지는 '준비 중'이에요.
+const MY_MENUS: { group: string; items: { icon: string; label: string; href?: string }[] }[] = [
   { group: "나의 거래", items: [
     { icon: "🧺", label: "판매내역" },
     { icon: "🛍️", label: "구매내역" },
-    { icon: "♡", label: "관심목록" },
+    { icon: "♡", label: "관심목록", href: "/my/likes" },
   ] },
   { group: "나의 동네", items: [
     { icon: "📍", label: "내 동네 설정" },
@@ -33,12 +34,24 @@ export default function MyPage() {
           <h2 className="mb-2 px-1 font-display text-lg">{m.group}</h2>
           <ul className="stitch divide-y-2 divide-dashed divide-straw bg-[#fffaf0]/70">
             {m.items.map((it) => (
-              <li key={it.label} className="flex items-center justify-between px-4 py-3.5">
-                <span className="flex items-center gap-3">
-                  <span className="text-xl">{it.icon}</span>
-                  {it.label}
-                </span>
-                <span className="text-xs text-soil-soft">준비 중</span>
+              <li key={it.label}>
+                {it.href ? (
+                  <Link href={it.href} className="flex items-center justify-between px-4 py-3.5 hover:bg-flesh-soft/40">
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">{it.icon}</span>
+                      {it.label}
+                    </span>
+                    <span className="text-soil-soft">›</span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">{it.icon}</span>
+                      {it.label}
+                    </span>
+                    <span className="text-xs text-soil-soft">준비 중</span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

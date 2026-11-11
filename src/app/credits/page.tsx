@@ -19,6 +19,9 @@ const CREDITS = [
   { item: "1960년대 손으로 그린 우리 고장 옛 지도 원본", file: "Daedongyeojido_(Gyujanggak)_06-04.jpg", author: "김정호 (대동여지도)", license: "퍼블릭 도메인" },
   { item: "1988 올림픽 성화 봉송 주자 운동복 + 참가 기념패", file: "Seoul_1988_Torch.JPG", author: "IVF", license: "퍼블릭 도메인" },
   { item: "2027년 8월 이집트 개기일식 관측 투어 동행권", file: "2024_Total_Solar_Eclipse_Corona.jpg", author: "Brucewaters", license: "CC BY 4.0" },
+  { item: "사과 10kg 한박스", file: "Apples_in_boxes.jpg", author: "위키미디어 공용", license: "CC0" },
+  { item: "엔비디아 H100 GPU", file: "NVIDIA_H100_(极客湾Geekerwan)_011.png", author: "极客湾 Geekerwan", license: "CC BY 3.0" },
+  { item: "꿀고구마 10kg 상암 최고 꿀맛 보장", file: "Sweet_Potatos.jpg", author: "위키미디어 공용", license: "CC0" },
 ];
 
 export default function CreditsPage() {

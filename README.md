@@ -74,6 +74,26 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 3. 글에는 사진 경로만 순서대로 저장돼요. 첫 번째 사진이 대표 사진이에요.
 4. 화면에서는 `next/image`가 사진을 화면 크기에 맞게 줄여서 보여 줘요. (`next.config.ts`의 `images.remotePatterns`)
 
+## 4단계: 좋아요(관심) + 판매자·구매자 1:1 채팅 ✅
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `supabase/migrations/004_goguma_likes_chat.sql` | `item_likes`, `chat_rooms`, `chat_messages` 테이블 + RLS + 숫자 자동 갱신 트리거 + Realtime |
+| `src/app/items/like-actions.ts`, `src/components/LikeButton.tsx` | ♡ 누르기/취소 (누르는 즉시 화면 반영: `useOptimistic`) |
+| `src/app/my/likes` | 관심목록 (내가 ♡ 누른 글) |
+| `src/app/chat/actions.ts` | '채팅하기' → 이 글로 연 방이 있으면 그 방, 없으면 새 방 |
+| `src/app/chat`, `src/app/chat/[roomId]` | 채팅 목록(안 읽은 수) / 1:1 대화방 |
+| `src/components/ChatRoomView.tsx` | 메시지 보내기 + Supabase Realtime으로 새 메시지·읽음 표시 바로 반영 |
+| `src/lib/social.ts` | 좋아요·채팅 데이터 읽기 |
+
+### 보안 규칙 (RLS)
+- 좋아요: 누가 눌렀는지는 본인만 보고, 화면엔 숫자(`items.like_count`)만 보여요.
+- 채팅방·메시지: 방의 두 사람(판매자·구매자)만 보고 보낼 수 있어요. 방은 구매자가 만들고, 판매자는 그 글의 진짜 판매자여야 해요.
+- 메시지는 보낸 뒤 내용을 못 고치고, 상대 메시지의 '읽음'(`read_at`)만 표시할 수 있어요.
+
+### 개발 팁
+- 판매자·구매자를 동시에 시험하려면 `localhost:3000`(한 계정)과 `127.0.0.1:3000`(다른 계정)을 따로 열어요. (`next.config.ts`의 `allowedDevOrigins`)
+
 ## 디자인 테마 — 구황작물 / 향토
 한지 배경, 흙색 글자, 고구마 껍질 자주색 버튼, 군고구마 속살 노란색 강조.
 색상과 버튼 스타일은 `src/app/globals.css` 의 `@theme` 과 `@utility` 에 모여 있습니다.
@@ -81,5 +101,5 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 ## 다음 단계 (예정)
 - [x] 판매글 올리기 / 목록 / 상세 / 수정 / 삭제 (사진 제외)
 - [x] 판매글 사진 업로드 (Supabase Storage, 최대 10장)
-- [ ] 찜하기, 채팅
+- [x] 좋아요(관심목록), 판매자·구매자 1:1 채팅
 - [ ] 배포 (가계부와 다른 주소로)
