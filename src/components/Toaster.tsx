@@ -22,6 +22,10 @@ const MESSAGES: Record<string, string> = {
   password: "🔑 비밀번호를 바꿨어요.",
   resetsent: "📮 비밀번호 재설정 메일을 보냈어요. 메일함을 확인해 주세요.",
   goodbye: "👋 탈퇴했어요. 그동안 고마웠어요!",
+  region: "📍 동네 인증을 마쳤어요!",
+  handled: "✅ 신고를 처리했어요.",
+  hidden: "🙈 글을 숨겼어요.",
+  shown: "👀 글을 다시 보이게 했어요.",
 };
 
 export default function Toaster() {

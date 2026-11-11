@@ -53,7 +53,10 @@ async function UserProfile({ params }: { params: PageProps<"/users/[id]">["param
               {profile.nickname}
               {isMe && <span className="ml-2 text-sm text-soil-soft">(나)</span>}
             </h1>
-            <p className="text-sm text-soil-soft">📍 {profile.region ?? "동네 미설정"} · {joined} 가입</p>
+            <p className="text-sm text-soil-soft">
+              📍 {profile.region ?? "동네 미설정"}
+              {profile.region_verified_at && <span className="ml-1 text-leaf">✅ 동네 인증</span>} · {joined} 가입
+            </p>
           </div>
         </div>
         <div className="mt-5">

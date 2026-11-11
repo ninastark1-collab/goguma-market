@@ -5,7 +5,7 @@ import { CATEGORIES, type Item } from "@/lib/market";
 
 // 판매자 닉네임·프로필 이모지·고구마 온도를 profiles 테이블에서 함께 가져와요.
 // !items_seller_id_fkey: items↔profiles 연결이 여러 개(판매자·구매자·좋아요·채팅·댓글…)라 "판매자 연결"이라고 콕 집어 줘요.
-export const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp)";
+export const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname, avatar, manner_temp, region_verified_at)";
 
 export type ItemSort = "recent" | "popular" | "low" | "high";
 

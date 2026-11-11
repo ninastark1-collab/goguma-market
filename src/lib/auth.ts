@@ -16,11 +16,15 @@ export const getCurrentUser = cache(async () => {
   const claims = data?.claims;
   if (!claims) return null;
 
-  const { data: profile } = await supabase
+  const [{ data: profile }, { data: admin }] = await Promise.all([
+    supabase
     .from("profiles")
-    .select("nickname, region, created_at, avatar, manner_temp")
+    .select("nickname, region, created_at, avatar, manner_temp, region_verified_at")
     .eq("id", claims.sub)
-    .maybeSingle();
+    .maybeSingle(),
+    // 운영자인지 (RLS 덕분에 '내 줄'만 보여요)
+    supabase.from("goguma_admins").select("user_id").eq("user_id", claims.sub).maybeSingle(),
+  ]);
 
   const meta = (claims.user_metadata ?? {}) as { nickname?: string; region?: string };
 
@@ -32,5 +36,7 @@ export const getCurrentUser = cache(async () => {
     createdAt: profile?.created_at ?? null,
     avatar: profile?.avatar ?? "🍠",
     temp: Number(profile?.manner_temp ?? 36.5),
+    regionVerified: !!profile?.region_verified_at, // 위치로 동네 인증했는지
+    isAdmin: !!admin, // 운영자(신고 처리)
   };
 });

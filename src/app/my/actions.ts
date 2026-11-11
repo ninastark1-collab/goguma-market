@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { AVATARS, PHOTO_BUCKET } from "@/lib/market";
+import { isInKorea, regionFromAddress } from "@/lib/region";
 
 export type FormState = { error?: string; message?: string } | undefined;
 
@@ -90,4 +91,74 @@ export async function markAllNotificationsRead() {
   const supabase = await createClient();
   await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
   revalidatePath("/", "layout");
+}
+
+// ── 키워드 알림 ───────────────────────────────────
+
+export type KeywordState = { error?: string; ok?: number } | undefined;
+
+// 관심 키워드 추가 (최대 10개 — DB 규칙이 한 번 더 검사)
+export async function addKeyword(_prev: KeywordState, formData: FormData): Promise<KeywordState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/my/keywords");
+
+  const keyword = String(formData.get("keyword") ?? "").trim();
+  if (!keyword) return { error: "키워드를 적어 주세요." };
+  if (keyword.length > 20) return { error: "키워드는 20자까지 적을 수 있어요." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("keyword_alerts").insert({ user_id: user.id, keyword });
+  if (error) {
+    if (error.code === "23505") return { error: "이미 등록한 키워드예요." };
+    if (error.message.includes("keyword_limit")) return { error: "키워드는 10개까지 등록할 수 있어요." };
+    return { error: "등록하지 못했어요: " + error.message };
+  }
+  revalidatePath("/my/keywords");
+  return { ok: Date.now() };
+}
+
+export async function removeKeyword(keyword: string) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/my/keywords");
+  const supabase = await createClient();
+  await supabase.from("keyword_alerts").delete().eq("user_id", user.id).eq("keyword", keyword);
+  revalidatePath("/my/keywords");
+}
+
+// ── 위치 기반 동네 인증 ───────────────────────────────
+
+export type RegionState = { error?: string; found?: string } | undefined;
+
+// 휴대폰이 알려 준 위치(위도·경도)로 동네 이름을 찾아서, 내 동네로 저장하고 '인증됨'으로 표시해요.
+// 동네 이름은 서버가 직접 찾아요. (브라우저가 보낸 동네 이름을 그대로 믿지 않으려고)
+export async function verifyRegion(_prev: RegionState, formData: FormData): Promise<RegionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/my/region");
+
+  const lat = Number(formData.get("lat"));
+  const lng = Number(formData.get("lng"));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !isInKorea(lat, lng))
+    return { error: "위치를 확인하지 못했어요. 한국 안에서 위치 권한을 허용해 주세요." };
+
+  // OpenStreetMap Nominatim: 위치 → 주소 (이용 규칙상 앱 이름을 User-Agent로 알려야 해요)
+  // zoom=12: 읍·면·동 단위 (더 크게 확대하면 '태평리'처럼 리 단위가 나와요)
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=ko&lat=${lat.toFixed(5)}&lon=${lng.toFixed(5)}`;
+  let region: string | null = null;
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": "goguma-market-study/1.0" }, cache: "no-store" });
+    if (res.ok) region = regionFromAddress((await res.json()).address ?? {});
+  } catch {
+    // 주소 찾기 서비스가 잠시 안 될 수 있어요.
+  }
+  if (!region) return { error: "이 위치의 동네 이름을 찾지 못했어요. 잠시 후 다시 시도해 주세요." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ region, region_verified_at: new Date().toISOString() })
+    .eq("id", user.id);
+  if (error) return { error: "저장하지 못했어요: " + error.message };
+
+  revalidatePath("/", "layout");
+  redirect("/my?toast=region");
 }

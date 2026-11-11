@@ -26,6 +26,10 @@ function describe(n: Notification) {
       return { text: `${who}님이 거래 후기를 보냈어요 💌`, sub: n.body, href: "/users/me" };
     case "sold":
       return { text: `${who}님과 ${title} 거래가 완료됐어요. 후기를 남겨 주세요!`, sub: "", href: `/items/${n.item_id}` };
+    case "keyword":
+      return { text: `키워드 ‘${n.body}’이(가) 들어간 새 물건이 올라왔어요 🏷️ ${title}`, sub: "", href: `/items/${n.item_id}` };
+    case "report":
+      return { text: `내가 한 신고가 처리됐어요: ${n.body}`, sub: "", href: "/my" };
     case "post_comment":
       return { text: `${who}님이 내 동네생활 글에 댓글을 남겼어요`, sub: n.body, href: `/community/${n.post_id}` };
   }

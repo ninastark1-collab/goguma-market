@@ -46,6 +46,7 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   if (!EMAIL_RE.test(email)) return { error: "이메일 형식을 확인해 주세요.", fields };
   if (password.length < 6) return { error: "비밀번호는 6자 이상이어야 해요.", fields };
   if (password !== passwordConfirm) return { error: "비밀번호가 서로 달라요.", fields };
+  if (formData.get("agree") !== "on") return { error: "이용약관과 개인정보처리방침에 동의해 주세요.", fields };
 
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? "http://localhost:3000";

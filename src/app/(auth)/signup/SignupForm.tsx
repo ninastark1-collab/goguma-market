@@ -72,6 +72,15 @@ export default function SignupForm() {
         </label>
       </div>
 
+      {/* 약관 동의: 꼭 체크해야 가입돼요 (서버에서도 한 번 더 확인) */}
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="agree" required className="mt-1 h-4 w-4 accent-[var(--color-skin)]" />
+        <span>
+          <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-skin">이용약관</Link>과{" "}
+          <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-skin">개인정보처리방침</Link>을 읽고 동의해요. (필수)
+        </span>
+      </label>
+
       <FormMessage error={state?.error} />
 
       <button type="submit" className="btn-goguma mt-2 w-full" disabled={pending}>

@@ -13,6 +13,7 @@ import { DetailSkeleton } from "@/components/Skeletons";
 import { BumpButton, ReviewForm } from "@/components/TradeForms";
 import { startChat } from "@/app/chat/actions";
 import { markSold } from "@/app/items/trade-actions";
+import { setItemHidden } from "@/app/admin/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getBlockedIds, getItem, getRequestTime } from "@/lib/items";
 import { formatPrice, getCategory, photoUrl, timeAgo } from "@/lib/market";
@@ -107,7 +108,10 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
             <Avatar emoji={item.seller?.avatar} size={44} />
             <span className="min-w-0 flex-1">
               <span className="block font-display">{item.seller?.nickname ?? "알 수 없음"}</span>
-              <span className="block text-xs text-soil-soft">📍 {item.region ?? "동네 미설정"}</span>
+              <span className="block text-xs text-soil-soft">
+                📍 {item.region ?? "동네 미설정"}
+                {item.seller?.region_verified_at && <span className="ml-1 text-leaf">✅ 동네 인증</span>}
+              </span>
             </span>
             {/* 좁은 칸이라 숫자형(compact)으로: 36.5℃ 🌱 */}
             <span className="flex shrink-0 flex-col items-end">
@@ -117,6 +121,18 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
           </Link>
 
           <div className="flex-1 px-5 py-6 sm:px-8">
+            {item.is_hidden && (
+              <p className="mb-4 rounded-xl border-2 border-ember bg-[#fbe4dc] px-3 py-2 text-sm text-ember">
+                🙈 운영 정책으로 숨겨진 글이에요. 판매자와 운영자만 볼 수 있어요.
+              </p>
+            )}
+            {user?.isAdmin && (
+              <form action={setItemHidden.bind(null, item.id, !item.is_hidden, back)} className="mb-4">
+                <button type="submit" className="btn-straw px-3! py-1! text-xs">
+                  🛡️ 운영자: {item.is_hidden ? "글 다시 보이기" : "이 글 숨기기"}
+                </button>
+              </form>
+            )}
             {blockedSeller && (
               <p className="mb-4 rounded-xl bg-hanji-deep px-3 py-2 text-sm text-soil-soft">🚫 내가 차단한 사용자의 글이에요.</p>
             )}

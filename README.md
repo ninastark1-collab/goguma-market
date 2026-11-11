@@ -7,6 +7,7 @@
 ```bash
 npm install
 npm run dev     # http://localhost:3000
+npm test        # 자동 테스트 (Vitest)
 ```
 
 `.env.local` 에 Supabase 주소와 publishable 키가 들어 있습니다. (`.env.example` 참고)
@@ -140,6 +141,22 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 | `src/app/items/trade-actions.ts`, `src/app/safety/actions.ts`, `src/app/my/actions.ts` | 거래·후기·끌올 / 신고·차단 / 내 정보 Server Actions |
 | `src/components/useBadges.tsx` | 안 읽은 채팅·알림 숫자 (실시간) |
 
+## 7단계: 운영·신뢰 마무리 ✅
+
+| 기능 | 파일 |
+| --- | --- |
+| 🏷️ 키워드 알림 (새 글 제목에 내 키워드 → 🔔, 10개까지) | `src/app/my/keywords`, DB `keyword_alerts` + 트리거 |
+| 🛡️ 운영자 신고 처리 (접수/처리완료/반려, 글 숨기기, 댓글·글 지우기, 신고자에게 결과 알림) | `src/app/admin/reports`, `src/app/admin/actions.ts`, DB `goguma_admins` |
+| 📍 위치 기반 동네 인증 (위치 → 동네 이름은 서버가 Nominatim으로 찾아요) | `src/app/my/region`, `src/lib/region.ts` |
+| 📜 이용약관·개인정보처리방침 + 가입 동의 | `src/app/terms`, `src/app/privacy` |
+| 📱 홈 화면에 앱처럼 설치(PWA), 앱 아이콘 | `src/app/manifest.ts`, `icon.tsx`, `apple-icon.tsx` |
+| 🔎 검색엔진용 sitemap·robots, 동네생활 공유 미리보기 | `src/app/sitemap.ts`, `robots.ts` |
+| ⌨️ 접근성: 본문으로 건너뛰기, 키보드 포커스 테두리 | `src/app/layout.tsx`, `globals.css` |
+| 🧪 자동 테스트 (Vitest, 26개) | `npm test`, `src/lib/__tests__` |
+
+- 운영자 지정·해제는 Supabase SQL에서만: `insert into goguma_admins (user_id) values ('사용자 id');`
+- 동네 인증은 브라우저가 알려 준 위치를 믿어요. (웹에서는 위치 조작을 완전히 막을 수 없어요)
+
 ## 디자인 테마 — 구황작물 / 향토
 한지 배경, 흙색 글자, 고구마 껍질 자주색 버튼, 군고구마 속살 노란색 강조.
 색상과 버튼 스타일은 `src/app/globals.css` 의 `@theme` 과 `@utility` 에 모여 있습니다.
@@ -150,5 +167,5 @@ CRUD = 만들기(Create) · 읽기(Read) · 고치기(Update) · 지우기(Delet
 - [x] 좋아요(관심목록), 판매자·구매자 1:1 채팅
 - [x] 판매글 댓글
 - [x] 거래완료·후기·고구마 온도, 알림, 신고·차단, 동네생활, 검색 필터, 끌어올리기, 내 정보 관리
-- [ ] 키워드 알림, 운영자용 신고 처리 화면, 동네 인증(위치)
+- [x] 키워드 알림, 운영자용 신고 처리 화면, 동네 인증(위치), 약관·개인정보, PWA, 자동 테스트
 - [ ] 배포 (가계부와 다른 주소로)

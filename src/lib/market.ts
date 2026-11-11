@@ -49,7 +49,8 @@ export type Item = {
   buyer_id: string | null; // 거래완료 때 고른 구매자
   bumped_at: string; // 끌어올린 시각 (목록은 이 순서)
   accept_offers: boolean; // 가격 제안 받기
-  seller: { nickname: string; avatar: string; manner_temp: number } | null;
+  is_hidden: boolean; // 운영자가 숨긴 글 (판매자·운영자만 보여요)
+  seller: { nickname: string; avatar: string; manner_temp: number; region_verified_at?: string | null } | null;
 };
 
 // 프로필에 고를 수 있는 이모지 (구황작물·향토 느낌)

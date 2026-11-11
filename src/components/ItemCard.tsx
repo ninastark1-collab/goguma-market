@@ -40,7 +40,10 @@ export default function ItemCard({ item, now }: { item: Item; now: number }) {
         </div>
 
         <div className="min-w-0 flex-1 sm:mt-3">
-          <h3 className="line-clamp-2 leading-snug text-soil group-hover:text-skin">{item.title}</h3>
+          <h3 className="line-clamp-2 leading-snug text-soil group-hover:text-skin">
+            {item.is_hidden && <span className="mr-1 rounded bg-ember px-1 text-[10px] text-white">숨김</span>}
+            {item.title}
+          </h3>
           <p className="mt-1 text-xs text-soil-soft">
             {item.region ?? "동네 미설정"} ·{" "}
             {/* 끌어올린 글은 '끌올 n분 전'으로 보여요 */}

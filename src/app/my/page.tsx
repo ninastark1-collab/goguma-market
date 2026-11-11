@@ -18,10 +18,10 @@ const MY_MENUS: { group: string; items: Menu[] }[] = [
     { icon: "💌", label: "받은 거래 후기", href: "/users/me" },
   ] },
   { group: "나의 동네", items: [
-    { icon: "📍", label: "내 동네 설정", href: "/my/edit" },
+    { icon: "📍", label: "동네 인증 (위치로 확인)", href: "/my/region" },
     { icon: "🌾", label: "내가 쓴 동네생활 글", href: "/community?mine=1" },
     { icon: "🔔", label: "알림", href: "/notifications" },
-    { icon: "🏷️", label: "키워드 알림" },
+    { icon: "🏷️", label: "키워드 알림", href: "/my/keywords" },
   ] },
   { group: "계정", items: [
     { icon: "🍠", label: "내 정보 수정", href: "/my/edit" },
@@ -84,7 +84,14 @@ async function Profile() {
         <Avatar emoji={user.avatar} size={72} />
         <div className="min-w-0">
           <h1 className="truncate font-display text-2xl">{user.nickname}</h1>
-          <p className="text-sm text-soil-soft">📍 {user.region ?? "동네를 아직 정하지 않았어요"}</p>
+          <p className="text-sm text-soil-soft">
+            📍 {user.region ?? "동네를 아직 정하지 않았어요"}
+            {user.regionVerified ? (
+              <span className="ml-1 text-leaf">✅ 인증</span>
+            ) : (
+              <Link href="/my/region" className="ml-1 underline underline-offset-2 hover:text-skin">인증하기</Link>
+            )}
+          </p>
           <p className="mt-1 truncate text-xs text-soil-soft">{user.email}</p>
         </div>
       </div>
@@ -94,6 +101,13 @@ async function Profile() {
         <TempBadge temp={user.temp} />
         <p className="mt-1 text-xs text-soil-soft">거래 후기를 받을수록 따뜻해져요 · 가입일 {joined}</p>
       </div>
+
+      {/* 운영자에게만 보이는 바로가기 */}
+      {user.isAdmin && (
+        <Link href="/admin/reports" className="mt-5 block rounded-xl border-2 border-soil bg-skin px-4 py-2.5 text-center font-display text-white">
+          🛡️ 운영자: 신고 처리하러 가기
+        </Link>
+      )}
 
       <div className="mt-5 flex gap-2">
         <Link href={`/users/${user.id}`} className="btn-straw flex-1 text-center text-sm">내 프로필 보기</Link>

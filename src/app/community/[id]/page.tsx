@@ -11,7 +11,15 @@ import { getPost, getPostComments, topicEmoji } from "@/lib/community";
 import { getBlockedIds, getRequestTime } from "@/lib/items";
 import { timeAgo } from "@/lib/market";
 
-export const metadata: Metadata = { title: "동네생활 · 고구마마켓" };
+// 링크 공유 미리보기: 동네생활 글의 주제와 첫 문장
+export async function generateMetadata({ params }: PageProps<"/community/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPost(id);
+  if (!post) return { title: "동네생활 · 고구마마켓" };
+  const title = `[${post.topic}] ${post.body.slice(0, 30)}${post.body.length > 30 ? "…" : ""}`;
+  const description = `${post.region ?? "우리 동네"} 이웃의 이야기 · ${post.body.slice(0, 80)}`;
+  return { title: `${title} · 고구마마켓 동네생활`, description, openGraph: { title, description, siteName: "고구마마켓", type: "article" } };
+}
 
 export default function PostPage({ params }: PageProps<"/community/[id]">) {
   return (

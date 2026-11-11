@@ -9,6 +9,7 @@ export type Profile = {
   region: string | null;
   avatar: string;
   manner_temp: number;
+  region_verified_at: string | null;
   created_at: string;
 };
 
@@ -19,7 +20,7 @@ export async function getProfile(userId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, nickname, region, avatar, manner_temp, created_at")
+    .select("id, nickname, region, avatar, manner_temp, region_verified_at, created_at")
     .eq("id", userId)
     .maybeSingle();
   return data ? ({ ...data, manner_temp: Number(data.manner_temp) } as Profile) : null;
@@ -65,7 +66,7 @@ export async function hasReviewed(itemId: number, userId: string | undefined) {
 
 export type Notification = {
   id: number;
-  type: "comment" | "like" | "review" | "sold" | "post_comment";
+  type: "comment" | "like" | "review" | "sold" | "post_comment" | "keyword" | "report";
   body: string;
   read_at: string | null;
   created_at: string;
