@@ -131,7 +131,12 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages 
                   {m.body}
                 </p>
                 <span className="shrink-0 pb-0.5 text-[10px] leading-tight text-soil-soft">
-                  {mine && m.read_at && <span className="block text-right text-flesh">읽음</span>}
+                  {/* 내가 보낸 메시지: 상대가 읽기 전엔 '읽지 않음', 읽으면 실시간으로 '읽음'으로 바뀌어요 */}
+                  {mine && (
+                    <span className={`block text-right ${m.read_at ? "text-soil-soft" : "font-bold text-flesh"}`}>
+                      {m.read_at ? "읽음" : "읽지 않음"}
+                    </span>
+                  )}
                   {timeFmt.format(new Date(m.created_at))}
                 </span>
               </div>
