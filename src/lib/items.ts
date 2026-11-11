@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES, type Item } from "@/lib/market";
 
 // 판매자 닉네임을 profiles 테이블에서 함께 가져와 seller 라는 이름으로 붙여요.
-const ITEM_COLUMNS = "*, seller:profiles(nickname)";
+// !items_seller_id_fkey: 좋아요·채팅 표가 생겨서 items↔profiles 연결이 여러 개라, "판매자 연결"이라고 콕 집어 줘요.
+const ITEM_COLUMNS = "*, seller:profiles!items_seller_id_fkey(nickname)";
 
 // 목록: 최신순. category를 주면 그 카테고리만.
 export async function getItems({ category }: { category?: string } = {}) {
