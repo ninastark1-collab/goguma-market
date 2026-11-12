@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { EmptyBox } from "@/components/ItemList";
 import MarkNotificationsRead from "@/components/MarkNotificationsRead";
+import PushToggle from "@/components/PushToggle";
 import { RowListSkeleton } from "@/components/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { getRequestTime } from "@/lib/items";
@@ -64,6 +65,10 @@ async function List() {
 
   return (
     <>
+      {/* 사이트를 닫아도 알림이 오게 */}
+      <div className="mt-6">
+        <PushToggle userId={user.id} />
+      </div>
       {/* 화면을 열면 모두 읽음으로 바꿔요 (메뉴의 빨간 숫자가 사라져요) */}
       <MarkNotificationsRead upToId={Math.max(...items.map((n) => n.id))} />
       <ul className="stitch mt-6 divide-y-2 divide-dashed divide-straw bg-[#fffaf0]/70">

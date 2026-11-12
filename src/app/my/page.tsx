@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import PushToggle from "@/components/PushToggle";
 import { Avatar, TempBadge } from "@/components/Avatar";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -36,6 +37,13 @@ export default function MyPage() {
       <Suspense fallback={<div className="card-sack h-56 animate-pulse" />}>
         <Profile />
       </Suspense>
+
+      {/* 푸시 알림 켜기/끄기 (이 기기 기준) */}
+      <section className="mt-6">
+        <Suspense fallback={<div className="stitch h-20 animate-pulse" />}>
+          <PushSection />
+        </Suspense>
+      </section>
 
       {MY_MENUS.map((m) => (
         <section key={m.group} className="mt-8">
@@ -116,4 +124,10 @@ async function Profile() {
       </div>
     </div>
   );
+}
+
+async function PushSection() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return <PushToggle userId={user.id} />;
 }

@@ -21,7 +21,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Supabase 프로젝트 `gfcylhusujdvzsoinwoj`(서울, ap-northeast-2)는 **가계부 앱(money-ledger)과 함께 쓰는 DB**예요.
 - **가계부 테이블 `transactions`, `budgets`는 절대 건드리지 마세요.** (읽기·수정·삭제·스키마 변경 모두 금지)
   - 가계부는 로그인 없이 공개 키로 쓰는 앱이라, 이 테이블들의 RLS·정책을 바꾸면 가계부가 망가질 수 있어요.
-- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글), `item_likes`(좋아요), `chat_rooms`·`chat_messages`(채팅), `item_comments`(댓글), `item_reviews`(후기), `notifications`(알림), `reports`(신고), `user_blocks`(차단), `community_posts`·`community_comments`(동네생활), `keyword_alerts`(키워드), `goguma_admins`(운영자), `deals`(거래 약속), `item_views`(조회 기록), `goguma_regions`(동네 위치표). Storage 버킷: `goguma-item-photos`(판매글 사진, 공개), `goguma-chat-photos`(채팅 사진, 비공개). 내부 도우미 함수는 API에 안 열린 `goguma_private` 스키마에 둬요.
+- 고구마마켓 테이블은 가계부와 이름이 겹치지 않게 지어요. 지금 고구마마켓 테이블: `profiles`, `items`(판매글), `item_likes`(좋아요), `chat_rooms`·`chat_messages`(채팅), `item_comments`(댓글), `item_reviews`(후기), `notifications`(알림), `reports`(신고), `user_blocks`(차단), `community_posts`·`community_comments`(동네생활), `keyword_alerts`(키워드), `goguma_admins`(운영자), `deals`(거래 약속), `item_views`(조회 기록), `goguma_regions`(동네 위치표), `push_subscriptions`(푸시 받을 기기), `push_sent`(보낸 푸시 기록). Storage 버킷: `goguma-item-photos`(판매글 사진, 공개), `goguma-chat-photos`(채팅 사진, 비공개). 내부 도우미 함수는 API에 안 열린 `goguma_private` 스키마에 둬요.
 - 인증(`auth.users`)도 두 앱이 같은 공간을 써요. 가계부는 로그인을 안 쓰지만, 사용자를 일괄 삭제하는 등 auth 전체에 영향을 주는 작업은 하지 마세요.
 - DB를 바꿀 때는 **반드시 SQL 파일을 `supabase/migrations/`에 번호 순서대로 남기고**(예: `002_goguma_items.sql`), 모든 새 테이블에 **RLS를 켜고 정책을 함께** 만들어요. 바꾼 뒤에는 Supabase 보안 점검(advisors)을 돌려 확인해요.
 - 데이터를 지우거나 테이블을 없애는 작업은 먼저 주인에게 물어보세요.
@@ -40,6 +40,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 약속 단계 바꾸기는 꼭 `rpc("goguma_set_deal_status")`로 해요. 물건 줄을 먼저 잠가서 동시 수락 교착(deadlock)을 막아요. `deals`를 직접 update하지 마세요.
 - `findItems`는 숨긴 글을 기본으로 빼요. 내 판매·구매내역만 `includeHidden: true`.
 - 접속 중(Presence) 연결은 머리말의 `<PresenceIdentity>`가 맺어요. 같은 이름의 채널은 예전 것이 완전히 끊긴 뒤에 다시 만들어야 해요(라이브러리가 같은 이름이면 예전 채널을 돌려줘요).
+- 푸시 알림: `push_subscriptions`(내 기기들), 트리거 `goguma_push_hook` → Edge Function `goguma-push`(verify_jwt 끔, 대신 Vault의 `goguma_push_hook` 암호를 헤더로 확인). 비밀 값은 Vault에만 두고 파일·깃에 넣지 마세요. 함수를 고치면 `supabase/functions/goguma-push/index.ts`도 같이 고쳐요. `supabase/functions`는 Deno 코드라 tsconfig·eslint에서 빠져 있어요.
 - 근처 동네: `goguma_regions`(동네 이름 → 중심 좌표, 추가만 가능·내 프로필 동네 이름만). 동네를 저장하는 곳에서는 저장 **뒤에** `rememberRegion()`을 불러요(정책이 프로필 동네와 같은 이름만 허용). 거리 계산은 `market.ts`의 `distanceKm`.
 - 주소의 개수 값(`n`)은 `safeLimit()`으로 정리해요. 소수·음수가 DB로 가면 400 오류가 나요.
 - `<form action>`은 실패해도 입력칸을 되돌려요. 실패 시 내용을 지키려면 상태로 돌려받아 `defaultValue`에 넣거나 onSubmit+startTransition을 써요.

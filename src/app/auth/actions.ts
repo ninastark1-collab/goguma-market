@@ -98,8 +98,11 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   redirect(next);
 }
 
-export async function logout() {
+export async function logout(formData?: FormData) {
   const supabase = await createClient();
+  // 이 기기의 푸시 구독을 먼저 지워요. (로그아웃한 뒤에도 내 알림이 이 기기에 오지 않게)
+  const endpoint = String(formData?.get("pushEndpoint") ?? "");
+  if (endpoint) await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   // scope: "local" → 이 기기에서만 로그아웃. 쿠키를 먼저 지우고 나서 서버에 알립니다.
   await supabase.auth.signOut({ scope: "local" });
   revalidatePath("/", "layout");

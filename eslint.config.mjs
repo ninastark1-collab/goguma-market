@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Supabase 서버 함수(Deno용)는 Next.js 검사에서 빼요
+    "supabase/functions/**",
   ]),
 ]);
 

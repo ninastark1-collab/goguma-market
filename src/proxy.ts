@@ -9,6 +9,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // 정적 파일과 이미지는 건너뜁니다.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // sw.js(서비스 워커)는 로그인 확인이 필요 없어서 빼요
+    "/((?!_next/static|_next/image|favicon.ico|sw\.js|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
