@@ -12,6 +12,7 @@ export type ItemSort = "recent" | "popular" | "low" | "high";
 export type ItemQuery = {
   category?: string;
   region?: string; // 이 동네 글만
+  regions?: string[]; // 이 동네들 글만 (근처 동네 보기)
   keyword?: string; // 제목 또는 카테고리 이름에 들어 있으면
   minPrice?: number;
   maxPrice?: number;
@@ -50,6 +51,7 @@ export async function findItems(q: ItemQuery = {}) {
   let query = supabase.from("items").select(ITEM_COLUMNS);
   if (q.category) query = query.eq("category", q.category);
   if (q.region) query = query.eq("region", q.region);
+  if (q.regions) query = query.in("region", q.regions);
   if (q.sellerId) query = query.eq("seller_id", q.sellerId);
   if (q.buyerId) query = query.eq("buyer_id", q.buyerId);
   if (q.status) query = query.eq("status", q.status);

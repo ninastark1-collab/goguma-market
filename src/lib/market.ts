@@ -91,6 +91,22 @@ export type Rating = keyof typeof RATINGS;
 export const REPORT_REASONS = ["사기 의심", "판매 금지 물품", "욕설·비방", "스팸·광고", "기타"] as const;
 
 // DB 오류 문장을 사용자에게 보여 줄 한국어로 바꿔요.
+// 홈 '내 동네' 범위: 우리 동네만 / 근처 / 넓게
+// (시골은 읍·면 하나가 넓어서 12km는 되어야 옆 동네가 잡혀요)
+export const AREA_RANGES = [
+  { value: "near", label: "근처 동네", km: 12 },
+  { value: "wide", label: "넓게", km: 25 },
+] as const;
+
+// 두 지점 사이 거리(km) — 지구를 공으로 보고 계산하는 하버사인 공식
+export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(rad(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
 // 주소의 n 같은 '몇 개' 값을 안전한 정수로 (1.5, -5, 글자 → 기본값/범위 안으로)
 export function safeLimit(value: unknown, fallback: number, max: number) {
   const n = Math.floor(Number(value));

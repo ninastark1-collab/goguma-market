@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { AVATARS, PHOTO_BUCKET } from "@/lib/market";
 import { isInKorea, regionFromAddress } from "@/lib/region";
+import { rememberRegion } from "@/lib/geo";
 
 export type FormState = { error?: string; message?: string } | undefined;
 
@@ -28,6 +29,8 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
     .update({ nickname, region: region || null, avatar, show_online: formData.get("showOnline") === "on" })
     .eq("id", user.id);
   if (error) return { error: "저장하지 못했어요: " + error.message };
+  // 새 동네면 위치표에 동네 중심 좌표를 적어 둬요. (근처 동네 보기에 써요)
+  if (region && region !== user.region) await rememberRegion(region);
 
   revalidatePath("/", "layout");
   redirect("/my?toast=profile");
@@ -165,6 +168,8 @@ export async function verifyRegion(_prev: RegionState, formData: FormData): Prom
     .update({ region, region_verified_at: new Date().toISOString() })
     .eq("id", user.id);
   if (error) return { error: "저장하지 못했어요: " + error.message };
+  // 동네 중심 좌표를 위치표에 (지도에서 못 찾으면 인증한 위치를 1km 단위로 뭉개서 대신 써요)
+  await rememberRegion(region, { lat, lng });
 
   revalidatePath("/", "layout");
   redirect("/my?toast=region");

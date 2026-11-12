@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { rememberRegion } from "@/lib/geo";
 
 export type AuthState = {
   error?: string;
@@ -70,6 +71,8 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
 
   // 이메일 인증이 꺼져 있으면 바로 세션이 생기므로 홈으로 보냅니다.
   if (data.session) {
+    // 가입하며 적은 동네도 위치표에 (근처 동네 보기용)
+    await rememberRegion(region);
     revalidatePath("/", "layout");
     redirect("/?welcome=1");
   }

@@ -1,6 +1,6 @@
 // market.ts의 화면용 계산 함수 테스트
 import { describe, expect, it } from "vitest";
-import { formatPrice, friendlyDbError, getCategory, safeLimit, tempLook, timeAgo } from "@/lib/market";
+import { distanceKm, formatPrice, friendlyDbError, getCategory, safeLimit, tempLook, timeAgo } from "@/lib/market";
 
 describe("formatPrice 가격 표시", () => {
   it("0원은 나눔으로 보여요", () => {
@@ -52,4 +52,12 @@ describe("safeLimit 주소의 개수 값 정리", () => {
     expect(safeLimit(undefined, 20, 300)).toBe(20);
   });
   it("최대값을 넘지 않아요", () => expect(safeLimit("9999", 20, 300)).toBe(300));
+});
+
+describe("distanceKm 두 동네 사이 거리", () => {
+  const 가남읍 = { lat: 37.2030833, lng: 127.5465246 };
+  it("같은 곳은 0km", () => expect(distanceKm(가남읍, 가남읍)).toBe(0));
+  it("가남읍 ↔ 점동면 약 10km", () => expect(distanceKm(가남읍, { lat: 37.2064694, lng: 127.6623799 })).toBeCloseTo(10.3, 0));
+  it("서울시청 ↔ 부산시청 약 325km", () =>
+    expect(distanceKm({ lat: 37.5663, lng: 126.9779 }, { lat: 35.1798, lng: 129.075 })).toBeGreaterThan(310));
 });

@@ -6,7 +6,8 @@ import CategoryGrid from "@/components/CategoryGrid";
 import ItemList, { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems } from "@/lib/items";
-import { safeLimit } from "@/lib/market";
+import { AREA_RANGES, safeLimit } from "@/lib/market";
+import { nearbyRegions } from "@/lib/geo";
 import { ItemGridSkeleton } from "@/components/Skeletons";
 import { RecentlyViewed } from "@/components/ViewTracker";
 
@@ -101,37 +102,68 @@ const PAGE = 24; // 한 번에 보여 줄 개수 (더 보기를 누를 때마다
 async function LatestItems({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
   const { area, n } = await searchParams;
   const user = await getCurrentUser();
-  // 내 동네 탭: 로그인했고 동네를 정해 둔 사람만
-  const mine = area === "mine" && !!user?.region;
+  const myRegion = user?.region ?? null;
+  // 범위: 전체 / 우리 동네만(mine) / 근처(near) / 넓게(wide) — 동네를 정해 둔 사람만
+  const range = AREA_RANGES.find((r) => r.value === area);
+  const scope = myRegion && (area === "mine" || range) ? (area as string) : "all";
   const limit = safeLimit(n, PAGE, 300);
+
+  // 근처·넓게: 위치표에서 내 동네로부터 km 안의 동네 이름들을 찾아요.
+  // 내 동네 위치를 모르면(지도에 없는 이름) 우리 동네 글만 보여 주고 안내해요.
+  const near = range && myRegion ? await nearbyRegions(myRegion, range.km) : null;
+  const unknownSpot = !!range && !!myRegion && !near;
   const { items, hasMore } = await findItems({
-    region: mine ? user!.region! : undefined,
+    region: scope === "mine" || unknownSpot ? myRegion! : undefined,
+    regions: near ? near.map((r) => r.name) : undefined,
     limit,
     hideBlocked: user?.id,
   });
 
+  const short = (name: string) => name.split(" ").pop();
   const tab = (active: boolean) =>
     `rounded-full border-2 px-3 py-1 text-sm ${active ? "border-soil bg-skin text-white" : "border-soil/30 bg-[#fffaf0] hover:border-skin"}`;
 
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-xl">방금 올라온 {mine ? "내 동네" : "우리 동네"} 매물 🌱</h2>
-        <nav className="flex gap-1.5" aria-label="동네 범위">
-          <Link href="/" scroll={false} className={tab(!mine)}>전체</Link>
-          {user?.region ? (
-            <Link href="/?area=mine" scroll={false} className={tab(mine)}>📍 {user.region.split(" ").pop()}</Link>
+        <h2 className="font-display text-xl">방금 올라온 {scope === "all" ? "우리 동네" : range ? range.label : "내 동네"} 매물 🌱</h2>
+        <nav className="flex flex-wrap gap-1.5" aria-label="동네 범위">
+          <Link href="/" scroll={false} className={tab(scope === "all")}>전체</Link>
+          {myRegion ? (
+            <>
+              <Link href="/?area=mine" scroll={false} className={tab(scope === "mine")}>📍 {short(myRegion)}</Link>
+              {AREA_RANGES.map((r) => (
+                <Link key={r.value} href={`/?area=${r.value}`} scroll={false} className={tab(scope === r.value)}>
+                  {r.label} <span className="text-xs opacity-80">~{r.km}km</span>
+                </Link>
+              ))}
+            </>
           ) : (
             <Link href={user ? "/my/edit" : "/login?next=/my/edit"} className={tab(false)}>📍 내 동네 정하기</Link>
           )}
         </nav>
       </div>
+      {/* 근처 범위에 들어간 동네들을 알려 줘요 */}
+      {near && (
+        <p className="-mt-2 mb-4 text-xs text-soil-soft">
+          📍 {short(myRegion!)}
+          {near.length > 1
+            ? ` + ${near.filter((r) => r.name !== myRegion).map((r) => short(r.name)).join("·")} (${range!.km}km 안 ${near.length}개 동네)`
+            : ` — ${range!.km}km 안에 아직 다른 동네 글이 없어요`}
+        </p>
+      )}
+      {unknownSpot && (
+        <p className="-mt-2 mb-4 text-xs text-soil-soft">
+          ‘{myRegion}’의 위치를 지도에서 찾지 못해서 우리 동네 글만 보여 드려요.{" "}
+          <Link href="/my/region" className="underline underline-offset-2 hover:text-skin">동네 인증</Link>을 하면 근처 동네도 볼 수 있어요.
+        </p>
+      )}
       <ItemList
         items={items}
         empty={
           <EmptyBox
             emoji="🌱"
-            title={mine ? "아직 우리 동네엔 물건이 없어요" : "아직 밭이 비어 있어요"}
+            title={scope === "all" ? "아직 밭이 비어 있어요" : range ? `${range.km}km 안에는 아직 물건이 없어요` : "아직 우리 동네엔 물건이 없어요"}
             desc="첫 번째로 물건을 올려 보세요!"
           >
             <Link href="/write" className="btn-goguma mt-3 px-4! py-2! text-sm!">+ 내 물건 팔기</Link>
@@ -141,7 +173,7 @@ async function LatestItems({ searchParams }: { searchParams: PageProps<"/">["sea
       {hasMore && (
         <div className="mt-8 text-center">
           <Link
-            href={`/?${new URLSearchParams({ ...(mine ? { area: "mine" } : {}), n: String(limit + PAGE) })}`}
+            href={`/?${new URLSearchParams({ ...(scope !== "all" ? { area: scope } : {}), n: String(limit + PAGE) })}`}
             scroll={false}
             className="btn-straw"
           >
