@@ -138,7 +138,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
           <div className="flex-1 px-5 py-6 sm:px-8">
             {item.is_hidden && (
               <p className="mb-4 rounded-xl border-2 border-ember bg-[#fbe4dc] px-3 py-2 text-sm text-ember">
-                🙈 운영 정책으로 숨겨진 글이에요. 판매자와 운영자만 볼 수 있어요.
+                🙈 운영 정책으로 숨겨진 글이에요. 판매자·구매자와 운영자만 볼 수 있어요.
               </p>
             )}
             {user?.isAdmin && (

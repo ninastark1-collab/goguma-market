@@ -3,7 +3,7 @@ import Link from "next/link";
 import GogumaLogo from "@/components/GogumaLogo";
 import LogoutButton from "@/components/LogoutButton";
 import NavBadgeLinks from "@/components/NavBadgeLinks";
-import { OnlineCount } from "@/components/Presence";
+import { OnlineCount, PresenceIdentity } from "@/components/Presence";
 import { NAV_ITEMS } from "@/components/nav";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -45,6 +45,8 @@ async function UserNav() {
 
   return (
     <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm sm:gap-3">
+      {/* 접속 중 표시: 지금 로그인한 사람으로 연결 (로그아웃·다른 계정 로그인 시 다시 연결) */}
+      <PresenceIdentity userId={user?.id} share={!!user?.showOnline} />
       {user ? (
         <>
           <Link href="/my/edit" className="hidden rounded-full border-2 border-soil/30 px-3 py-1 text-xs text-soil-soft hover:border-skin sm:inline">

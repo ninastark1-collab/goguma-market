@@ -1,5 +1,6 @@
 "use client";
 // 접속 중인 사용자 (Supabase Realtime Presence)
+// 연결은 머리말의 <PresenceIdentity>가 맺어요. (로그인한 사람이 바뀌면 다시 맺어요)
 // Presence: 같은 '방(channel)'에 들어와 있는 사람 목록을 실시간으로 알려 주는 기능이에요.
 // - 로그인했고 '접속 상태 공개'를 켠 사람만 자기 id를 알려요(track).
 // - 누구나 목록을 들을 수 있어서, 로그인 안 한 사람도 "n명 접속 중"을 볼 수 있어요.
@@ -12,26 +13,33 @@ import { Avatar } from "@/components/Avatar";
 
 const listeners = new Set<(ids: Set<string>) => void>();
 let online = new Set<string>();
-let started = false;
+// 지금 연결된 '나'(로그인한 사람 id + 공개 여부). 로그인·로그아웃은 새로고침 없이 일어나서,
+// 머리말이 알려 줄 때마다 바뀌었으면 연결을 끊고 새로 맺어요.
+let identity: string | null = null;
+let stop: (() => Promise<unknown>) | null = null;
+// 연결 바꾸기는 한 줄로 차례차례: 예전 연결이 '완전히' 끊긴 뒤에 새로 맺어요.
+// (같은 이름의 연결이 남아 있으면 라이브러리가 예전 것을 돌려줘서 오류가 났어요)
+let queue: Promise<void> = Promise.resolve();
 
-function start() {
-  if (started) return;
-  started = true;
-  const supabase = createClient();
+function connect(me: string | undefined, share: boolean) {
+  const key = `${me ?? "guest"}:${share}`;
+  if (identity === key) return;
+  identity = key;
+  queue = queue.then(async () => {
+    if (stop) await stop().catch(() => {}); // 예전 연결(다른 사람으로 접속 중이던 것)부터 정리
+    stop = null;
+    if (identity !== key) return; // 그사이 또 바뀌었으면 이번 연결은 건너뛰어요
 
-  (async () => {
+    const supabase = createClient();
     const { data } = await supabase.auth.getSession();
-    const me = data.session?.user.id;
     if (data.session) supabase.realtime.setAuth(data.session.access_token);
 
-    // 내 공개 설정 확인 (끈 사람은 목록에 안 나와요)
-    let share = false;
-    if (me) {
-      const { data: p } = await supabase.from("profiles").select("show_online").eq("id", me).maybeSingle();
-      share = !!p?.show_online;
-    }
-
+    let timer: ReturnType<typeof setInterval> | undefined;
     const channel = supabase.channel("goguma-online", { config: { presence: { key: me ?? `guest-${crypto.randomUUID()}` } } });
+    stop = () => {
+      if (timer) clearInterval(timer);
+      return supabase.removeChannel(channel); // 연결을 끊으면 접속 목록에서도 빠져요
+    };
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState<{ id?: string }>();
@@ -45,23 +53,30 @@ function start() {
         if (status === "SUBSCRIBED" && me && share) await channel.track({ id: me });
       });
 
-    // 마지막 접속 시각 남기기: 지금 한 번, 그다음 2분마다 (DB가 '지금' 시각으로 고정해요)
+    // 마지막 접속 시각 남기기: 지금 한 번, 그다음 2분마다
     if (me && share) {
       // 주의: Supabase 질의는 then()이나 await를 해야 실제로 서버에 보내져요.
       const beat = () => {
         void supabase.from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", me).then(() => {});
       };
       beat();
-      setInterval(beat, 120_000);
+      timer = setInterval(beat, 120_000);
     }
-  })();
+  });
+}
+
+// 머리말(로그인 정보를 아는 곳)에 놓아서, '지금 누구로 접속 중인지'를 알려 줘요.
+export function PresenceIdentity({ userId, share }: { userId?: string; share: boolean }) {
+  useEffect(() => {
+    connect(userId, share);
+  }, [userId, share]);
+  return null;
 }
 
 export function useOnline() {
   // 처음엔 서버가 그린 화면과 같게 '아무도 없음'에서 시작해요. (hydration 오류 방지)
   const [ids, setIds] = useState<Set<string>>(new Set());
   useEffect(() => {
-    start();
     listeners.add(setIds);
     const t = setTimeout(() => setIds(online), 0);
     return () => {

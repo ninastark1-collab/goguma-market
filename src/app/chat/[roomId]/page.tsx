@@ -13,7 +13,7 @@ import { timeAgo } from "@/lib/market";
 import { leaveChatRoom } from "@/app/chat/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getChatRoom } from "@/lib/social";
-import { isBlockedByMe } from "@/lib/trust";
+import { isBlockedBetween, isBlockedByMe } from "@/lib/trust";
 import { formatPrice } from "@/lib/market";
 
 export const metadata: Metadata = { title: "대화방 · 고구마마켓" };
@@ -43,7 +43,12 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
   const otherId = iAmSeller ? room.buyer_id : room.seller_id;
   const other = iAmSeller ? room.buyer : room.seller;
   const otherName = other?.nickname ?? "알 수 없음";
-  const [blocked, now] = await Promise.all([isBlockedByMe(user.id, otherId), getRequestTime()]);
+  // blockedByMe: '차단 풀기' 버튼용 / blocked: 어느 쪽이든 차단이면 보내기·약속을 막아요
+  const [blockedByMe, blocked, now] = await Promise.all([
+    isBlockedByMe(user.id, otherId),
+    isBlockedBetween(user.id, otherId),
+    getRequestTime(),
+  ]);
   const item = room.item;
   const back = `/chat/${room.id}`;
 
@@ -67,7 +72,7 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
             <summary className="cursor-pointer list-none px-1 text-xl text-soil-soft" aria-label="메뉴">⋮</summary>
             <div className="absolute right-0 top-8 z-20 flex w-36 flex-col gap-3 rounded-xl border-2 border-soil bg-hanji p-3 text-sm shadow-[3px_4px_0_var(--color-soil)]">
               <ReportButton targetType="chat" targetId={room.id} back={back} label="🚨 신고하기" className="text-left hover:text-ember" />
-              <BlockButton otherId={otherId} nickname={otherName} back={back} blocked={blocked} className="text-left hover:text-ember" />
+              <BlockButton otherId={otherId} nickname={otherName} back={back} blocked={blockedByMe} className="text-left hover:text-ember" />
               <form action={leaveChatRoom.bind(null, room.id)}>
                 <button type="submit" className="text-left hover:text-ember">👋 채팅방 나가기</button>
               </form>
@@ -91,7 +96,7 @@ async function Room({ params }: { params: PageProps<"/chat/[roomId]">["params"] 
             )}
           </div>
         ) : (
-          <p className="px-4 py-2.5 text-sm text-soil-soft">삭제된 판매글이에요.</p>
+          <p className="px-4 py-2.5 text-sm text-soil-soft">삭제됐거나 운영 정책으로 숨겨진 판매글이에요.</p>
         )}
         {/* 거래 약속: 가격 협의 → 구매확정(수락) → 예약중 → 거래완료 */}
         {item && (

@@ -9,7 +9,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { friendlyDbError } from "@/lib/market";
 
-export type CommentState = { error?: string; ok?: number } | undefined;
+// body: 실패했을 때 적던 내용을 돌려줘서 입력칸이 비지 않게 해요.
+export type CommentState = { error?: string; ok?: number; body?: string } | undefined;
 
 // bind로 글 번호를 미리 넣어서 써요.
 export async function addComment(itemId: number, _prev: CommentState, formData: FormData): Promise<CommentState> {
@@ -18,7 +19,7 @@ export async function addComment(itemId: number, _prev: CommentState, formData: 
 
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: "댓글 내용을 적어 주세요." };
-  if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요." };
+  if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요.", body };
 
   // 답글이면 원댓글 번호가 같이 와요. (답글에 답글은 DB 규칙이 막아요)
   const parentRaw = String(formData.get("parentId") ?? "");
@@ -26,7 +27,7 @@ export async function addComment(itemId: number, _prev: CommentState, formData: 
 
   const supabase = await createClient();
   const { error } = await supabase.from("item_comments").insert({ item_id: itemId, author_id: user.id, body, parent_id });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return { error: friendlyDbError(error.message), body };
 
   revalidatePath(`/items/${itemId}`);
   // ok에 시각을 넣어 두면, 폼이 '방금 성공했다'는 걸 알고 입력칸을 비워요.

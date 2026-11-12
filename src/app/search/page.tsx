@@ -6,7 +6,7 @@ import ItemList, { EmptyBox } from "@/components/ItemList";
 import { ItemGridSkeleton } from "@/components/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems, type ItemSort } from "@/lib/items";
-import { CATEGORIES, CONDITIONS } from "@/lib/market";
+import { CATEGORIES, CONDITIONS, safeLimit } from "@/lib/market";
 
 export const metadata: Metadata = { title: "검색 · 고구마마켓" };
 
@@ -44,9 +44,11 @@ async function Results({ searchParams }: { searchParams: PageProps<"/search">["s
   const hideDone = str("done") === "hide";
   const condition = (CONDITIONS as readonly string[]).includes(str("cond")) ? str("cond") : "";
   const sort = (SORTS.some((s) => s.value === str("sort")) ? str("sort") : "recent") as ItemSort;
-  const limit = Math.min(Number(str("n")) || PAGE, 300);
+  const limit = safeLimit(str("n"), PAGE, 300);
   // 검색어가 없어도 조건을 하나라도 고르면 결과를 보여 줘요.
-  const hasCondition = !!(query || category || minPrice != null || maxPrice != null || hideDone || condition || str("sort"));
+  // '*'처럼 검색에 못 쓰는 글자만 적었으면 검색어가 없는 것으로 봐요. (전체 목록이 나오지 않게)
+  const usable = query.replace(/\*/g, "").trim();
+  const hasCondition = !!(usable || category || minPrice != null || maxPrice != null || hideDone || condition || str("sort"));
 
   const user = await getCurrentUser();
   const { items, hasMore } = hasCondition

@@ -1,6 +1,6 @@
 "use client";
 // 내 정보 화면의 폼들: 프로필 수정, 비밀번호 바꾸기, 비밀번호 찾기, 회원 탈퇴
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import FormMessage from "@/components/FormMessage";
 import { changePassword, deleteAccount, requestPasswordReset, updateProfile } from "@/app/my/actions";
 import { AVATARS, REGION_SUGGESTIONS } from "@/lib/market";
@@ -8,7 +8,16 @@ import { AVATARS, REGION_SUGGESTIONS } from "@/lib/market";
 export function ProfileForm({ nickname, region, avatar, showOnline }: { nickname: string; region: string | null; avatar: string; showOnline: boolean }) {
   const [state, action, pending] = useActionState(updateProfile, undefined);
   return (
-    <form action={action} className="flex flex-col gap-4">
+    // onSubmit으로 보내요: <form action>은 저장에 실패해도 입력칸을 처음 값으로 되돌려 버려서,
+    // 고치던 닉네임·동네·그림이 사라졌어요. (성공하면 어차피 다른 화면으로 이동해요)
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="flex flex-col gap-4"
+    >
       <fieldset>
         <legend className="mb-2 font-display">프로필 그림</legend>
         <div className="grid grid-cols-6 gap-2">

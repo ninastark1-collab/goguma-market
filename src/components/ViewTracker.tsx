@@ -47,7 +47,9 @@ export default function ViewTracker({ item, userId }: { item: RecentItem; userId
     }
     // 이미 오늘 센 조회면 DB가 '중복(409)'으로 거절해요. 그건 정상이라 그냥 무시해요.
     createClient().from("item_views").insert({ item_id: item.id, viewer }).then(() => {});
-  }, [item, userId]);
+    // 글 번호가 바뀔 때만 다시 실행해요. (좋아요 등으로 화면이 다시 그려질 때마다 조회를 또 보내지 않게)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, userId]);
   return null;
 }
 

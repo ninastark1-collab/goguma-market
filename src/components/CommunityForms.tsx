@@ -48,6 +48,7 @@ export function PostCommentForm({ postId, parentId }: { postId: number; parentId
       <div className="flex items-end gap-2">
         <textarea
           name="body"
+          defaultValue={state?.body} // 실패하면 적던 내용을 그대로 돌려놔요
           rows={parentId ? 1 : 2}
           maxLength={500}
           required

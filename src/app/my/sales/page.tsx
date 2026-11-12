@@ -27,7 +27,7 @@ async function Sales({ searchParams }: { searchParams: PageProps<"/my/sales">["s
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/my/sales");
 
-  const { items } = await findItems({ sellerId: user.id, limit: 300 });
+  const { items } = await findItems({ sellerId: user.id, limit: 300, includeHidden: true });
   const done = tab === "done";
   const shown = items.filter((i) => (i.status === "거래완료") === done);
   const tabClass = (active: boolean) =>

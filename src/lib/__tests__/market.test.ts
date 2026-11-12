@@ -1,6 +1,6 @@
 // market.ts의 화면용 계산 함수 테스트
 import { describe, expect, it } from "vitest";
-import { formatPrice, friendlyDbError, getCategory, tempLook, timeAgo } from "@/lib/market";
+import { formatPrice, friendlyDbError, getCategory, safeLimit, tempLook, timeAgo } from "@/lib/market";
 
 describe("formatPrice 가격 표시", () => {
   it("0원은 나눔으로 보여요", () => {
@@ -40,4 +40,16 @@ describe("friendlyDbError DB 오류를 한국어로", () => {
 describe("getCategory 카테고리 찾기", () => {
   it("있는 카테고리", () => expect(getCategory("food")?.name).toBe("농산물/가공식품"));
   it("없는 카테고리", () => expect(getCategory("nope")).toBeUndefined());
+});
+
+describe("safeLimit 주소의 개수 값 정리", () => {
+  it("정상 숫자", () => expect(safeLimit("40", 20, 300)).toBe(40));
+  it("소수는 버림", () => expect(safeLimit("2.5", 20, 300)).toBe(2));
+  it("음수·0·글자는 기본값", () => {
+    expect(safeLimit("-5", 20, 300)).toBe(20);
+    expect(safeLimit("0", 20, 300)).toBe(20);
+    expect(safeLimit("abc", 20, 300)).toBe(20);
+    expect(safeLimit(undefined, 20, 300)).toBe(20);
+  });
+  it("최대값을 넘지 않아요", () => expect(safeLimit("9999", 20, 300)).toBe(300));
 });

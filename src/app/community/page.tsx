@@ -7,7 +7,7 @@ import { RowListSkeleton } from "@/components/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { getPosts, TOPICS, topicEmoji } from "@/lib/community";
 import { getRequestTime } from "@/lib/items";
-import { timeAgo } from "@/lib/market";
+import { safeLimit, timeAgo } from "@/lib/market";
 
 export const metadata: Metadata = { title: "동네생활 · 고구마마켓" };
 
@@ -36,7 +36,7 @@ async function Posts({ searchParams }: { searchParams: PageProps<"/community">["
   const user = await getCurrentUser();
   const mineOnly = str("mine") === "1" && !!user;
   const area = str("area") === "mine" && !!user?.region;
-  const limit = Math.min(Number(str("n")) || PAGE, 200);
+  const limit = safeLimit(str("n"), PAGE, 200);
 
   const [{ posts, hasMore }, now] = await Promise.all([
     getPosts({ topic, region: area ? user!.region! : undefined, authorId: mineOnly ? user!.id : undefined, limit, viewerId: user?.id }),

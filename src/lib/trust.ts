@@ -107,6 +107,19 @@ export async function isBlockedByMe(myId: string | undefined, otherId: string) {
   return !!data;
 }
 
+// 둘 사이에 차단이 있는지 (내가 했든, 상대가 나를 했든). 채팅방에서 보내기·약속을 막는 데 써요.
+// (017부터 '나를 차단한 기록'도 나에게는 보여요)
+export async function isBlockedBetween(myId: string | undefined, otherId: string) {
+  if (!myId || myId === otherId) return false;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_blocks")
+    .select("blocker_id")
+    .or(`and(blocker_id.eq.${myId},blocked_id.eq.${otherId}),and(blocker_id.eq.${otherId},blocked_id.eq.${myId})`)
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
 // 내 차단 목록
 export async function getMyBlocks(myId: string) {
   await connection();

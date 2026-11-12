@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "알림 · 고구마마켓" };
 // 알림 종류마다 문장과 눌렀을 때 갈 곳
 function describe(n: Notification) {
   const who = n.actor?.nickname ?? "누군가";
-  const title = n.item?.title ? `‘${n.item.title}’` : "내 글";
+  const title = n.item?.title ? `‘${n.item.title}’` : n.item_id ? "판매글" : "내 글";
   switch (n.type) {
     case "comment":
       return { text: `${who}님이 ${title}에 댓글을 남겼어요`, sub: n.body, href: `/items/${n.item_id}` };
@@ -69,9 +69,11 @@ async function List() {
       <ul className="stitch mt-6 divide-y-2 divide-dashed divide-straw bg-[#fffaf0]/70">
         {items.map((n) => {
           const d = describe(n);
-          return (
-            <li key={n.id}>
-              <Link href={d.href} className={`flex gap-3 px-4 py-3.5 hover:bg-flesh-soft/40 ${n.read_at ? "" : "bg-flesh-soft/30"}`}>
+          // 판매글 알림인데 글을 못 불러왔으면(운영자가 숨김) 눌러도 갈 곳이 없으니 링크 없이 흐리게 보여 줘요.
+          const gone = !!n.item_id && !n.item;
+          const rowClass = `flex gap-3 px-4 py-3.5 ${gone ? "opacity-60" : "hover:bg-flesh-soft/40"} ${n.read_at ? "" : "bg-flesh-soft/30"}`;
+          const body = (
+            <>
                 <Avatar emoji={n.actor?.avatar} size={40} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm leading-snug">
@@ -79,9 +81,20 @@ async function List() {
                     {d.text}
                   </span>
                   {d.sub && <span className="mt-0.5 block truncate text-xs text-soil-soft">“{d.sub}”</span>}
-                  <span className="mt-0.5 block text-[11px] text-soil-soft">{timeAgo(n.created_at, now)}</span>
+                  <span className="mt-0.5 block text-[11px] text-soil-soft">
+                    {timeAgo(n.created_at, now)}
+                    {gone && " · 지금은 볼 수 없는 글이에요"}
+                  </span>
                 </span>
-              </Link>
+            </>
+          );
+          return (
+            <li key={n.id}>
+              {gone ? (
+                <div className={rowClass}>{body}</div>
+              ) : (
+                <Link href={d.href} className={rowClass}>{body}</Link>
+              )}
             </li>
           );
         })}

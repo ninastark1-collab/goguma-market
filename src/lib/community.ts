@@ -35,7 +35,7 @@ const POST_COLUMNS = "*, author:profiles!community_posts_author_id_fkey(nickname
 export async function getPosts(q: { topic?: string; region?: string; authorId?: string; limit?: number; viewerId?: string }) {
   await connection();
   const supabase = await createClient();
-  const limit = Math.min(q.limit ?? 30, 200);
+  const limit = Math.min(Math.max(Math.floor(q.limit ?? 30) || 30, 1), 200);
   let query = supabase.from("community_posts").select(POST_COLUMNS).order("created_at", { ascending: false });
   if (q.topic) query = query.eq("topic", q.topic);
   if (q.region) query = query.eq("region", q.region);

@@ -38,13 +38,16 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
   const supabaseRef = useRef<ReturnType<typeof createClient>>(null);
 
   // 메시지를 목록에 넣거나(새 것) 바꿔요(읽음 표시). 같은 메시지가 두 번 들어오지 않게 id로 확인해요.
+  // 새 메시지는 '보낸 시각 → 번호' 순으로 끼워 넣어요. (실시간 도착 순서가 뒤바뀌어도 대화 순서는 그대로)
   function upsert(msg: ChatMessage) {
     setMessages((prev) => {
       const i = prev.findIndex((m) => m.id === msg.id);
-      if (i === -1) return [...prev, msg];
-      const next = [...prev];
-      next[i] = msg;
-      return next;
+      if (i !== -1) {
+        const next = [...prev];
+        next[i] = msg;
+        return next;
+      }
+      return [...prev, msg].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id - b.id);
     });
   }
 
@@ -106,8 +109,10 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
   }, [roomId, myId]);
 
   // 사진 메시지의 '잠깐 열리는 주소'를 한꺼번에 받아 와요 (1시간 동안 유효)
+  // 주소를 못 받은 사진(차단된 사이 등)은 ""로 적어 두고 다시 묻지 않아요. (끝없이 다시 요청하던 문제 방지)
   useEffect(() => {
-    const need = messages.map((m) => m.image_path).filter((p): p is string => !!p && !imageUrls[p]);
+    if (blocked) return;
+    const need = messages.map((m) => m.image_path).filter((p): p is string => !!p && !(p in imageUrls));
     if (need.length === 0) return;
     let cancelled = false;
     (async () => {
@@ -116,14 +121,15 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
       if (cancelled || !data) return;
       setImageUrls((prev) => {
         const next = { ...prev };
-        for (const d of data) if (d.path && d.signedUrl) next[d.path] = d.signedUrl;
+        const got = new Map(data.map((d) => [d.path, d.signedUrl]));
+        for (const p of need) next[p] = got.get(p) ?? "";
         return next;
       });
     })();
     return () => {
       cancelled = true;
     };
-  }, [messages, imageUrls]);
+  }, [messages, imageUrls, blocked]);
 
   // 새 메시지가 생기면 맨 아래로 스크롤
   useEffect(() => {
@@ -190,7 +196,13 @@ export default function ChatRoomView({ roomId, myId, otherName, initialMessages,
       const path = `${roomId}/${crypto.randomUUID()}.jpg`;
       const { error } = await supabaseRef.current!.storage.from(CHAT_BUCKET).upload(path, blob, { contentType: "image/jpeg" });
       if (error) throw new Error("사진을 올리지 못했어요: " + error.message);
-      await insert("", path);
+      try {
+        await insert("", path);
+      } catch (e) {
+        // 메시지를 못 남겼으면 올린 사진도 지워요. (아무도 못 보는 사진이 저장 공간에 남지 않게)
+        await supabaseRef.current!.storage.from(CHAT_BUCKET).remove([path]);
+        throw e;
+      }
     });
     if (fileRef.current) fileRef.current.value = "";
   }

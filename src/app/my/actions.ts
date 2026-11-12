@@ -96,7 +96,8 @@ export async function markAllNotificationsRead(upToId: number) {
     .eq("user_id", user.id)
     .is("read_at", null)
     .lte("id", upToId);
-  revalidatePath("/", "layout");
+  // revalidatePath는 하지 않아요: 지금 보고 있는 알림 화면의 '새 알림' 표시가 바로 지워져 버려요.
+  // (메뉴의 빨간 숫자는 실시간으로 다시 세요)
 }
 
 // ── 키워드 알림 ───────────────────────────────────

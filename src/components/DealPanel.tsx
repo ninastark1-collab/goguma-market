@@ -119,7 +119,9 @@ export default function DealPanel(p: Props) {
     ).then((ok) => ok && setOpen(false));
   }
 
-  const setStatus = (status: Deal["status"]) => run(() => createClient().from("deals").update({ status }).eq("id", deal!.id));
+  // 단계 바꾸기는 DB 함수(rpc)로 해요: 물건 줄을 먼저 잠가서, 두 방에서 동시에 수락해도 서로 멈추지(교착) 않아요.
+  const setStatus = (status: Deal["status"]) =>
+    run(() => createClient().rpc("goguma_set_deal_status", { p_deal: deal!.id, p_status: status }));
 
   if (!loaded || p.blocked) return null;
 

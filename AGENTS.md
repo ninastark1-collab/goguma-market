@@ -36,7 +36,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 판매 상태 저장은 **바꿨을 때만** 보내요(`originalStatus` 비교). 옛 화면의 상태를 그대로 저장하면 거래 약속이 몰래 취소돼요.
 - 댓글은 답글이 있으면 진짜로 안 지우고 `is_deleted`(내용 '삭제된 댓글이에요')로 남아요(BEFORE DELETE 트리거). 화면에서 `is_deleted`를 꼭 처리해요. 댓글 `body`는 빈칸 금지 규칙이 있어요.
 - 후기(`item_reviews`)는 글이 지워져도 남아요(`item_id`가 비고 `item_title`에 제목). 한 물건에 '누가→누구에게' 한 번씩이라 `hasReviewed`는 받는 사람까지 넘겨요.
-- 거래 약속 안내 문구는 `goguma.reason`(status/hidden)으로 '왜 취소됐는지'를 골라요.
+- 거래 약속 안내 문구는 `goguma.reason`(status/hidden/blocked)으로 '왜 취소됐는지'를 골라요.
+- 약속 단계 바꾸기는 꼭 `rpc("goguma_set_deal_status")`로 해요. 물건 줄을 먼저 잠가서 동시 수락 교착(deadlock)을 막아요. `deals`를 직접 update하지 마세요.
+- `findItems`는 숨긴 글을 기본으로 빼요. 내 판매·구매내역만 `includeHidden: true`.
+- 접속 중(Presence) 연결은 머리말의 `<PresenceIdentity>`가 맺어요. 같은 이름의 채널은 예전 것이 완전히 끊긴 뒤에 다시 만들어야 해요(라이브러리가 같은 이름이면 예전 채널을 돌려줘요).
+- 주소의 개수 값(`n`)은 `safeLimit()`으로 정리해요. 소수·음수가 DB로 가면 400 오류가 나요.
+- `<form action>`은 실패해도 입력칸을 되돌려요. 실패 시 내용을 지키려면 상태로 돌려받아 `defaultValue`에 넣거나 onSubmit+startTransition을 써요.
 - 보안 점검에 남는 경고 `delete_my_goguma_account` (SECURITY DEFINER)는 **의도된 것**이에요. 회원 탈퇴용이고 `auth.uid()` 본인 계정만 지워요.
 - `profiles.manner_temp`(고구마 온도)는 후기 트리거로만 바뀌어요. 사용자는 `nickname, region, avatar` 칸만 고칠 수 있게 막아 뒀어요.
 - 비밀번호 찾기 메일 링크가 배포 주소에서 동작하려면 Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://goguma-market-blond.vercel.app/**` 를 넣어야 해요.

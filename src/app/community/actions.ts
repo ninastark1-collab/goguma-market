@@ -9,7 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { TOPICS } from "@/lib/topics";
 import { friendlyDbError } from "@/lib/market";
 
-export type PostState = { error?: string; fields?: Record<string, string>; ok?: number } | undefined;
+export type PostState = { error?: string; fields?: Record<string, string>; ok?: number; body?: string } | undefined;
 
 export async function createPost(_prev: PostState, formData: FormData): Promise<PostState> {
   const user = await getCurrentUser();
@@ -49,7 +49,7 @@ export async function addPostComment(postId: number, _prev: PostState, formData:
 
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: "댓글 내용을 적어 주세요." };
-  if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요." };
+  if (body.length > 500) return { error: "댓글은 500자까지 적을 수 있어요.", body };
 
   // 답글이면 원댓글 번호가 같이 와요.
   const parentRaw = String(formData.get("parentId") ?? "");
@@ -57,7 +57,7 @@ export async function addPostComment(postId: number, _prev: PostState, formData:
 
   const supabase = await createClient();
   const { error } = await supabase.from("community_comments").insert({ post_id: postId, author_id: user.id, body, parent_id });
-  if (error) return { error: friendlyDbError(error.message) };
+  if (error) return { error: friendlyDbError(error.message), body };
 
   revalidatePath(`/community/${postId}`);
   return { ok: Date.now() };

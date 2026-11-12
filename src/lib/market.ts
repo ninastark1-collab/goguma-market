@@ -91,6 +91,12 @@ export type Rating = keyof typeof RATINGS;
 export const REPORT_REASONS = ["사기 의심", "판매 금지 물품", "욕설·비방", "스팸·광고", "기타"] as const;
 
 // DB 오류 문장을 사용자에게 보여 줄 한국어로 바꿔요.
+// 주소의 n 같은 '몇 개' 값을 안전한 정수로 (1.5, -5, 글자 → 기본값/범위 안으로)
+export function safeLimit(value: unknown, fallback: number, max: number) {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, max) : fallback;
+}
+
 export function friendlyDbError(message: string) {
   if (message.includes("rate_limited")) return "너무 빨리 여러 번 보냈어요. 잠시 후 다시 시도해 주세요.";
   if (message.includes("bump_too_soon")) return "끌어올리기는 하루에 한 번만 할 수 있어요.";

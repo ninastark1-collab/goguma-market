@@ -6,6 +6,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import ItemList, { EmptyBox } from "@/components/ItemList";
 import { getCurrentUser } from "@/lib/auth";
 import { findItems } from "@/lib/items";
+import { safeLimit } from "@/lib/market";
 import { ItemGridSkeleton } from "@/components/Skeletons";
 import { RecentlyViewed } from "@/components/ViewTracker";
 
@@ -102,7 +103,7 @@ async function LatestItems({ searchParams }: { searchParams: PageProps<"/">["sea
   const user = await getCurrentUser();
   // 내 동네 탭: 로그인했고 동네를 정해 둔 사람만
   const mine = area === "mine" && !!user?.region;
-  const limit = Math.min(Number(n) || PAGE, 300);
+  const limit = safeLimit(n, PAGE, 300);
   const { items, hasMore } = await findItems({
     region: mine ? user!.region! : undefined,
     limit,
