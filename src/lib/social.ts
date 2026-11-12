@@ -121,6 +121,7 @@ export type ItemComment = {
   id: number;
   item_id: number;
   parent_id: number | null; // 답글이면 원댓글 번호
+  is_deleted: boolean; // 답글이 달린 채 지워진 원댓글 (자리만 남아요)
   author_id: string;
   body: string;
   created_at: string;

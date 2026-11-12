@@ -1,7 +1,7 @@
 // DB(items 테이블)에서 판매글을 읽어 오는 함수들 — CRUD 중 R(Read, 읽기)
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { CATEGORIES, type Item } from "@/lib/market";
+import { CATEGORIES, type Item, type ItemStatus } from "@/lib/market";
 
 // 판매자 닉네임·프로필 이모지·고구마 온도를 profiles 테이블에서 함께 가져와요.
 // !items_seller_id_fkey: items↔profiles 연결이 여러 개(판매자·구매자·좋아요·채팅·댓글…)라 "판매자 연결"이라고 콕 집어 줘요.
@@ -21,6 +21,7 @@ export type ItemQuery = {
   limit?: number;
   sellerId?: string; // 이 사람이 올린 글 (판매내역·판매자 페이지)
   buyerId?: string; // 이 사람이 산 글 (구매내역)
+  status?: ItemStatus; // 이 상태인 글만
   hideBlocked?: string; // 이 사용자(나)가 차단한 사람의 글은 빼요
 };
 
@@ -49,6 +50,7 @@ export async function findItems(q: ItemQuery = {}) {
   if (q.region) query = query.eq("region", q.region);
   if (q.sellerId) query = query.eq("seller_id", q.sellerId);
   if (q.buyerId) query = query.eq("buyer_id", q.buyerId);
+  if (q.status) query = query.eq("status", q.status);
   if (q.hideDone) query = query.neq("status", "거래완료");
   if (q.condition) query = query.eq("condition", q.condition);
   if (q.minPrice != null) query = query.gte("price", q.minPrice);

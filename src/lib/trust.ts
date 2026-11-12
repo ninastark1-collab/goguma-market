@@ -29,7 +29,8 @@ export async function getProfile(userId: string) {
 
 export type Review = {
   id: number;
-  item_id: number;
+  item_id: number | null; // 글이 지워지면 비어요
+  item_title: string | null; // 후기를 남길 때 적어 둔 물건 제목
   reviewer_id: string;
   reviewee_id: string;
   rating: Rating;
@@ -53,7 +54,8 @@ export async function getReviewsFor(userId: string) {
 }
 
 // 이 글에 내가 이미 후기를 남겼는지
-export async function hasReviewed(itemId: number, userId: string | undefined) {
+// revieweeId: 같은 물건을 다른 사람에게 다시 팔았을 때, "이번 구매자"에게 남겼는지를 따로 봐요.
+export async function hasReviewed(itemId: number, userId: string | undefined, revieweeId?: string | null) {
   if (!userId) return false;
   const supabase = await createClient();
   const { data } = await supabase
@@ -61,6 +63,7 @@ export async function hasReviewed(itemId: number, userId: string | undefined) {
     .select("id")
     .eq("item_id", itemId)
     .eq("reviewer_id", userId)
+    .eq("reviewee_id", revieweeId ?? "")
     .maybeSingle();
   return !!data;
 }

@@ -102,17 +102,20 @@ async function UserProfile({ params }: { params: PageProps<"/users/[id]">["param
                     <b className="font-display">{r.reviewer?.nickname ?? "알 수 없음"}</b>
                     <span className="text-xs text-soil-soft">
                       {" · "}
-                      {r.item?.seller_id === profile.id ? "구매자" : "판매자"} · {timeAgo(r.created_at, now)}
+                      {r.item ? `${r.item.seller_id === profile.id ? "구매자" : "판매자"} · ` : ""}{timeAgo(r.created_at, now)}
                     </span>
                   </p>
                   <p className="text-sm">
                     {RATINGS[r.rating].emoji} {RATINGS[r.rating].label}
                     {r.body && ` — ${r.body}`}
                   </p>
-                  {r.item && (
+                  {r.item ? (
                     <Link href={`/items/${r.item.id}`} className="text-xs text-soil-soft underline underline-offset-2">
                       {r.item.title}
                     </Link>
+                  ) : (
+                    // 판매글이 지워져도 후기는 남아요 (어떤 물건이었는지만 글자로)
+                    r.item_title && <span className="text-xs text-soil-soft">{r.item_title} (지워진 글)</span>
                   )}
                 </div>
               </li>

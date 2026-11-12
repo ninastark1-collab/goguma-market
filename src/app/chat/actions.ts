@@ -28,6 +28,8 @@ export async function startChat(itemId: number) {
       .insert({ item_id: itemId, seller_id: item.seller_id, buyer_id: user.id })
       .select("id")
       .single();
+    // 42501 = 권한 없음(RLS): 판매자가 나를 차단했을 때 → 오류 화면 대신 안내만 보여 줘요.
+    if (error?.code === "42501") redirect(`/items/${itemId}?toast=chat_blocked`);
     // 23505 = 이미 있는 방(같은 순간 두 번 누름) → 있는 방을 다시 찾아요.
     if (error && error.code !== "23505") throw new Error("채팅방을 만들지 못했어요: " + error.message);
     room = created ?? (await findRoom()).data;
@@ -47,7 +49,10 @@ export async function leaveChatRoom(roomId: number) {
   const { data: room } = await supabase.from("chat_rooms").select("seller_id, buyer_id").eq("id", roomId).maybeSingle();
   if (!room) redirect("/chat");
   const column = room.seller_id === user.id ? "seller_left_at" : "buyer_left_at";
-  await supabase.from("chat_rooms").update({ [column]: new Date().toISOString() }).eq("id", roomId);
+  const now = new Date().toISOString();
+  await supabase.from("chat_rooms").update({ [column]: now }).eq("id", roomId);
+  // 나간 방의 안 읽은 메시지는 읽음으로 정리해요. (안 그러면 채팅 배지 숫자만 계속 남아요)
+  await supabase.from("chat_messages").update({ read_at: now }).eq("room_id", roomId).neq("sender_id", user.id).is("read_at", null);
 
   revalidatePath("/chat");
   redirect("/chat?toast=left");

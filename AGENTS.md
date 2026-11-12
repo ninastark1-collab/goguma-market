@@ -33,6 +33,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Supabase 질의는 `await`나 `.then()`을 해야 실제로 전송돼요. (그냥 부르면 아무 일도 안 일어나요)
 - 실시간 구독은 `SUBSCRIBED`가 된 순간 한 번 더 불러와야, 연결 전 틈에 생긴 변화를 놓치지 않아요.
 - RLS 정책 안에서 **같은 표를 다시 조회하면 무한 반복(infinite recursion)** 오류가 나요. 개수 제한 같은 건 트리거로 해요. (010 마이그레이션 참고)
+- 판매 상태 저장은 **바꿨을 때만** 보내요(`originalStatus` 비교). 옛 화면의 상태를 그대로 저장하면 거래 약속이 몰래 취소돼요.
+- 댓글은 답글이 있으면 진짜로 안 지우고 `is_deleted`(내용 '삭제된 댓글이에요')로 남아요(BEFORE DELETE 트리거). 화면에서 `is_deleted`를 꼭 처리해요. 댓글 `body`는 빈칸 금지 규칙이 있어요.
+- 후기(`item_reviews`)는 글이 지워져도 남아요(`item_id`가 비고 `item_title`에 제목). 한 물건에 '누가→누구에게' 한 번씩이라 `hasReviewed`는 받는 사람까지 넘겨요.
+- 거래 약속 안내 문구는 `goguma.reason`(status/hidden)으로 '왜 취소됐는지'를 골라요.
 - 보안 점검에 남는 경고 `delete_my_goguma_account` (SECURITY DEFINER)는 **의도된 것**이에요. 회원 탈퇴용이고 `auth.uid()` 본인 계정만 지워요.
 - `profiles.manner_temp`(고구마 온도)는 후기 트리거로만 바뀌어요. 사용자는 `nickname, region, avatar` 칸만 고칠 수 있게 막아 뒀어요.
 - 비밀번호 찾기 메일 링크가 배포 주소에서 동작하려면 Supabase 대시보드 → Authentication → URL Configuration → Redirect URLs에 `https://goguma-market-blond.vercel.app/**` 를 넣어야 해요.

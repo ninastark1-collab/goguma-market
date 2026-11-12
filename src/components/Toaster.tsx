@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   reported: "🚨 신고를 접수했어요. 확인 후 조치할게요.",
   blocked: "🚫 차단했어요. 이제 이 사용자의 글과 채팅이 보이지 않아요.",
   unblocked: "차단을 풀었어요.",
+  reserved_delete: "예약중인 글은 지울 수 없어요. 채팅방에서 약속을 취소하거나 판매 상태를 바꾼 뒤 지워 주세요.",
+  chat_blocked: "🚫 차단된 사이라서 채팅을 시작할 수 없어요.",
   left: "👋 채팅방에서 나왔어요.",
   posted: "🌾 동네생활에 글을 올렸어요!",
   password: "🔑 비밀번호를 바꿨어요.",

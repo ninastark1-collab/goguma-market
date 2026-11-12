@@ -76,7 +76,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
     getBlockedIds(user?.id),
     isBlockedByMe(user?.id, item.seller_id),
     isMine ? getChatPartnersForItem(item.id) : Promise.resolve([]),
-    done && (isMine || isBuyer) ? hasReviewed(item.id, user?.id) : Promise.resolve(true),
+    done && (isMine || isBuyer) ? hasReviewed(item.id, user?.id, isMine ? item.buyer_id : item.seller_id) : Promise.resolve(true),
     done && item.buyer_id && (isMine || isBuyer) ? getProfile(item.buyer_id) : Promise.resolve(null),
     // 판매자의 다른 상품 / 비슷한 상품(같은 카테고리, 판매 중인 것)
     findItems({ sellerId: item.seller_id, limit: 5 }),
@@ -86,7 +86,10 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
   const similarItems = similar.items.filter((i) => i.id !== item.id && i.seller_id !== item.seller_id).slice(0, 4);
   // 내가 차단한 사람의 댓글은 안 보여요.
   const visibleComments = comments.filter((c) => !blockedIds.includes(c.author_id));
+  const commentCount = visibleComments.filter((c) => !c.is_deleted).length; // '삭제된 댓글' 자리는 세지 않아요
   const back = `/items/${item.id}`;
+  // 예약중이면 '약속 잡힌 그 사람'에게만 거래완료할 수 있어요. (다른 사람을 고르면 약속이 엉뚱하게 깨져요)
+  const pickable = item.status === "예약중" && item.buyer_id ? partners.filter((p) => p.buyer_id === item.buyer_id) : partners;
 
   return (
     <>
@@ -163,7 +166,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               {edited && " · 수정됨"}
             </p>
             <p className="mt-1 text-xs text-soil-soft">
-              ♡ 관심 {item.like_count} · 💬 채팅 {item.chat_count} · 댓글 {visibleComments.length} · 조회 {item.view_count}
+              ♡ 관심 {item.like_count} · 💬 채팅 {item.chat_count} · 댓글 {commentCount} · 조회 {item.view_count}
             </p>
             {/* 상품 상태 · 거래 방법 */}
             <p className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -193,14 +196,14 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
                 {(!done || !item.buyer_id) && (
                   <details className="stitch bg-[#fffaf0]/70 px-4 py-3" open={done && !item.buyer_id}>
                     <summary className="cursor-pointer font-display text-sm">🤝 거래완료로 바꾸기 (구매자 고르기)</summary>
-                    {partners.length === 0 ? (
+                    {pickable.length === 0 ? (
                       <p className="mt-2 text-xs text-soil-soft">
                         이 글로 채팅한 사람이 아직 없어요. 구매자와 채팅으로 거래한 뒤 여기서 고를 수 있어요.
                         (채팅 없이 팔았다면 ‘수정’에서 상태만 거래완료로 바꿔도 돼요)
                       </p>
                     ) : (
                       <ul className="mt-2 flex flex-col gap-1.5">
-                        {partners.map((p) => (
+                        {pickable.map((p) => (
                           <li key={p.id}>
                             {/* bind: 어떤 글을, 누구에게 팔았는지 미리 넣은 액션 */}
                             <form action={markSold.bind(null, item.id, p.buyer_id, back)}>
@@ -283,7 +286,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
       {/* 댓글: 누구나 보고, 로그인한 사람만 써요 */}
       <section className="card-sack mt-6 px-5 py-5 sm:px-8" aria-label="댓글">
         <h2 className="font-display text-xl">
-          댓글 <span className="text-skin">{visibleComments.length}</span>
+          댓글 <span className="text-skin">{commentCount}</span>
         </h2>
 
         {visibleComments.length === 0 ? (
@@ -296,6 +299,7 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               // 내가 차단한 사람의 원댓글: 내용은 가리고, 다른 사람들의 답글은 그대로 보여 줘요.
               const parentBlocked = blockedIds.includes(c.author_id);
               if (parentBlocked && replies.length === 0) return null;
+              if (c.is_deleted && replies.length === 0) return null;
               const row = (x: typeof c, isReply: boolean) => {
                 const bySeller = x.author_id === item.seller_id;
                 // 지우기: 댓글 쓴 사람이거나, 이 글의 판매자일 때
@@ -322,9 +326,15 @@ async function ItemDetail({ params }: { params: PageProps<"/items/[id]">["params
               };
               return (
                 <li key={c.id} className="py-3">
-                  {parentBlocked ? <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p> : row(c, false)}
+                  {parentBlocked ? (
+                    <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p>
+                  ) : c.is_deleted ? (
+                    <p className="text-sm text-soil-soft">🗑️ 삭제된 댓글이에요.</p>
+                  ) : (
+                    row(c, false)
+                  )}
                   {replies.map((r) => row(r, true))}
-                  {user && !parentBlocked && (
+                  {user && !parentBlocked && !c.is_deleted && (
                     <div className="ml-7">
                       <ReplyToggle>
                         <CommentForm itemId={item.id} parentId={c.id} />

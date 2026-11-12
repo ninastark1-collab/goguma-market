@@ -126,6 +126,8 @@ export default function ItemForm({ action, item }: Props) {
       {/* 판매 상태는 글을 올린 뒤 '고치기'에서만 바꿀 수 있어요 */}
       {item && (
         <fieldset className="flex flex-col gap-1.5">
+          {/* 화면을 열 때의 상태: 그사이 거래 약속으로 상태가 바뀌었는지 서버가 비교해요 */}
+          <input type="hidden" name="originalStatus" value={item.status} />
           <legend className="mb-1.5 font-display">판매 상태</legend>
           <div className="flex gap-2">
             {STATUSES.map((s) => (

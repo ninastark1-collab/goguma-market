@@ -4,9 +4,10 @@
 import { useEffect } from "react";
 import { markAllNotificationsRead } from "@/app/my/actions";
 
-export default function MarkNotificationsRead() {
+// upToId: 화면에 그린 알림 중 가장 최근 번호. 그 사이 새로 온 알림은 '안 읽음'으로 남겨요.
+export default function MarkNotificationsRead({ upToId }: { upToId: number }) {
   useEffect(() => {
-    markAllNotificationsRead();
-  }, []);
+    markAllNotificationsRead(upToId);
+  }, [upToId]);
   return null;
 }

@@ -33,6 +33,8 @@ describe("friendlyDbError DB 오류를 한국어로", () => {
   it("도배 방지", () => expect(friendlyDbError("rate_limited")).toContain("너무 빨리"));
   it("끌어올리기 하루 한 번", () => expect(friendlyDbError("bump_too_soon")).toContain("하루에 한 번"));
   it("권한(RLS) 오류", () => expect(friendlyDbError("new row violates row-level security policy")).toContain("권한"));
+  it("차단된 사이 댓글", () => expect(friendlyDbError("blocked_pair")).toContain("차단"));
+  it("동시에 처리(교착)", () => expect(friendlyDbError("deadlock detected")).toContain("다시"));
 });
 
 describe("getCategory 카테고리 찾기", () => {

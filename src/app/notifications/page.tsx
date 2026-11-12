@@ -65,7 +65,7 @@ async function List() {
   return (
     <>
       {/* 화면을 열면 모두 읽음으로 바꿔요 (메뉴의 빨간 숫자가 사라져요) */}
-      <MarkNotificationsRead />
+      <MarkNotificationsRead upToId={Math.max(...items.map((n) => n.id))} />
       <ul className="stitch mt-6 divide-y-2 divide-dashed divide-straw bg-[#fffaf0]/70">
         {items.map((n) => {
           const d = describe(n);

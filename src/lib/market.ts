@@ -99,6 +99,9 @@ export function friendlyDbError(message: string) {
   if (message.includes("item_not_available")) return "이미 다른 분과 약속이 잡혔거나 판매가 끝난 물건이에요.";
   if (message.includes("bad_deal_step")) return "지금 단계에서는 할 수 없는 동작이에요. 화면을 새로 고쳐 주세요.";
   if (message.includes("deals_one_open_per_room")) return "이 대화방에는 이미 진행 중인 거래 약속이 있어요.";
+  if (message.includes("blocked_pair")) return "차단된 사이라서 댓글을 남길 수 없어요.";
+  // 두 사람이 같은 순간 같은 물건을 처리하면 DB가 한쪽을 멈춰요. 다시 하면 돼요.
+  if (message.includes("deadlock")) return "같은 순간에 다른 처리가 있었어요. 잠시 뒤 다시 해 주세요.";
   if (message.includes("row-level security")) return "권한이 없어요. 차단된 사이이거나 내 글이 아닐 수 있어요.";
   return "문제가 생겼어요: " + message;
 }

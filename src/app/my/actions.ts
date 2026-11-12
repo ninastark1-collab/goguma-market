@@ -72,12 +72,13 @@ export async function deleteAccount(_prev: FormState, formData: FormData): Promi
   if (String(formData.get("confirm") ?? "").trim() !== "탈퇴") return { error: "확인 칸에 ‘탈퇴’라고 적어 주세요." };
 
   const supabase = await createClient();
-  // Storage 파일은 DB에서 함께 지워지지 않아서, 내 폴더의 사진을 먼저 지워요.
+  // Storage 파일은 DB에서 함께 지워지지 않아요. 지울 목록을 먼저 받아 두고,
+  // 계정 삭제가 '성공한 뒤에' 지워요. (실패했는데 사진만 사라져 글이 깨지지 않게)
   const { data: files } = await supabase.storage.from(PHOTO_BUCKET).list(user.id, { limit: 1000 });
-  if (files?.length) await supabase.storage.from(PHOTO_BUCKET).remove(files.map((f) => `${user.id}/${f.name}`));
 
   const { error } = await supabase.rpc("delete_my_goguma_account");
   if (error) return { error: "탈퇴하지 못했어요: " + error.message };
+  if (files?.length) await supabase.storage.from(PHOTO_BUCKET).remove(files.map((f) => `${user.id}/${f.name}`));
 
   await supabase.auth.signOut({ scope: "local" });
   revalidatePath("/", "layout");
@@ -85,11 +86,16 @@ export async function deleteAccount(_prev: FormState, formData: FormData): Promi
 }
 
 // 알림을 모두 읽음으로
-export async function markAllNotificationsRead() {
+export async function markAllNotificationsRead(upToId: number) {
   const user = await getCurrentUser();
-  if (!user) return;
+  if (!user || !Number.isFinite(upToId)) return;
   const supabase = await createClient();
-  await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null)
+    .lte("id", upToId);
   revalidatePath("/", "layout");
 }
 

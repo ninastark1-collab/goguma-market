@@ -96,19 +96,31 @@ export async function updateItem(id: number, _prev: ItemFormState, formData: For
 
   const supabase = await createClient();
   // 고치기 전 사진 목록 (빠진 사진을 Storage에서 지우려고)
-  const { data: before } = await supabase.from("items").select("photos").eq("id", id).eq("seller_id", user.id).maybeSingle();
+  const { data: before } = await supabase.from("items").select("photos, status").eq("id", id).eq("seller_id", user.id).maybeSingle();
   if (!before) return { error: "내 글만 고칠 수 있어요.", fields: form.fields };
 
+  // 판매 상태는 '내가 직접 바꿨을 때만' 저장해요.
+  // 수정 화면을 열어 둔 사이 채팅에서 약속이 잡혀 예약중이 됐는데, 옛 화면의 '판매중'을 그대로 저장하면
+  // 약속이 몰래 취소되기 때문이에요.
+  const originalStatus = String(formData.get("originalStatus") ?? "");
+  const { status, ...rest } = form.values;
+  const statusChanged = status !== originalStatus;
+  if (statusChanged && before.status !== originalStatus)
+    return { error: `그사이 판매 상태가 '${before.status}'(으)로 바뀌었어요. 새로 고친 뒤 다시 해 주세요.`, fields: form.fields };
+
   // seller_id 조건을 함께 걸어서 본인 글만 고쳐요. (RLS도 같은 검사를 해요)
-  const { data, error } = await supabase
+  let query = supabase
     .from("items")
-    .update(form.values)
+    .update(statusChanged ? form.values : rest)
     .eq("id", id)
-    .eq("seller_id", user.id)
-    .select("id");
+    .eq("seller_id", user.id);
+  // 상태를 바꿀 땐 '화면을 열 때 상태 그대로일 때만' 바꿔요. (아주 짧은 틈의 경쟁까지 막기)
+  if (statusChanged) query = query.eq("status", originalStatus);
+  const { data, error } = await query.select("id");
 
   if (error) return { error: friendlyDbError(error.message), fields: form.fields };
-  if (!data?.length) return { error: "내 글만 고칠 수 있어요.", fields: form.fields };
+  if (!data?.length)
+    return { error: statusChanged ? "그사이 판매 상태가 바뀌었어요. 새로 고친 뒤 다시 해 주세요." : "내 글만 고칠 수 있어요.", fields: form.fields };
 
   // 이번에 뺀 사진은 저장 공간에서도 지워요.
   const kept = new Set(form.values.photos);
@@ -124,6 +136,11 @@ export async function deleteItem(id: number) {
   if (!user) redirect("/login");
 
   const supabase = await createClient();
+  // 예약중인 글은 바로 못 지워요: 지우면 구매자의 대화방까지 말없이 사라지거든요.
+  // (채팅방에서 약속을 취소하거나 상태를 바꾼 뒤 지울 수 있어요)
+  const { data: cur } = await supabase.from("items").select("status").eq("id", id).eq("seller_id", user.id).maybeSingle();
+  if (cur?.status === "예약중") redirect(`/items/${id}?toast=reserved_delete`);
+
   const { data, error } = await supabase
     .from("items")
     .delete()

@@ -63,7 +63,7 @@ async function PostDetail({ params }: { params: PageProps<"/community/[id]">["pa
       </article>
 
       <section className="card-sack mt-6 px-5 py-5 sm:px-8" aria-label="댓글">
-        <h2 className="font-display text-xl">댓글 <span className="text-skin">{visible.length}</span></h2>
+        <h2 className="font-display text-xl">댓글 <span className="text-skin">{visible.filter((c) => !c.is_deleted).length}</span></h2>
         {visible.length === 0 ? (
           <p className="mt-3 text-sm text-soil-soft">첫 댓글로 이웃에게 답해 주세요 🌱</p>
         ) : (
@@ -74,6 +74,7 @@ async function PostDetail({ params }: { params: PageProps<"/community/[id]">["pa
               const replies = visible.filter((r) => r.parent_id === c.id);
               const parentBlocked = blocked.includes(c.author_id);
               if (parentBlocked && replies.length === 0) return null;
+              if (c.is_deleted && replies.length === 0) return null;
               const row = (x: typeof c, isReply: boolean) => (
                 <div key={x.id} className={isReply ? "mt-3 ml-7 rounded-xl bg-hanji-deep/50 px-3 py-2" : ""}>
                   <div className="flex items-center gap-1.5 text-sm">
@@ -92,9 +93,15 @@ async function PostDetail({ params }: { params: PageProps<"/community/[id]">["pa
               );
               return (
                 <li key={c.id} className="py-3">
-                  {parentBlocked ? <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p> : row(c, false)}
+                  {parentBlocked ? (
+                    <p className="text-sm text-soil-soft">🚫 차단한 사용자의 댓글이에요.</p>
+                  ) : c.is_deleted ? (
+                    <p className="text-sm text-soil-soft">🗑️ 삭제된 댓글이에요.</p>
+                  ) : (
+                    row(c, false)
+                  )}
                   {replies.map((r) => row(r, true))}
-                  {user && !parentBlocked && (
+                  {user && !parentBlocked && !c.is_deleted && (
                     <div className="ml-7">
                       <ReplyToggle>
                         <PostCommentForm postId={post.id} parentId={c.id} />

@@ -30,7 +30,7 @@ export default function PurchasesPage() {
 async function Purchases() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/my/purchases");
-  const { items } = await findItems({ buyerId: user.id, limit: 300 });
+  const { items } = await findItems({ buyerId: user.id, status: "거래완료", limit: 300 });
   return (
     <ItemList
       items={items}
